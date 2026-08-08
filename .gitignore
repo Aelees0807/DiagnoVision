@@ -1,0 +1,28 @@
+# Datasets
+chest_xray/
+chest_xray_split/
+
+# Model checkpoints
+checkpoints/
+
+# Large archives
+archive.zip
+
+# Results (regeneratable)
+results/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
