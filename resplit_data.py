@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split
 from collections import Counter
 
 # ── Configuration ──────────────────────────────────────────────
-ORIG_DATA = Path(r"D:\DiagnoVision\chest_xray")
+ORIG_DATA = Path(r"D:\DiagnoVision\chest_xray")    
 NEW_DATA = Path(r"D:\DiagnoVision\chest_xray_split")
 CLASSES = ["NORMAL", "PNEUMONIA"]
 VAL_RATIO = 0.15
