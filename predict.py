@@ -166,18 +166,22 @@ def main():
     print(f"  [Pneumonia Prediction]")
     pred_class, conf, normal_prob, pneumonia_prob = predict_pneumonia(image_path, pneumonia_model, device)
 
-    print(f"  Prediction:   {pred_class}")
-    print(f"  Confidence:   {conf:.1f}%")
-    print()
+    CONFIDENCE_THRESHOLD = 70.0  # matches project's 0.7 threshold
+
     print(f"  Probabilities:")
     print(f"    NORMAL:     {normal_prob:.1f}%  {'<<' if normal_prob > pneumonia_prob else ''}")
     print(f"    PNEUMONIA:  {pneumonia_prob:.1f}%  {'<<' if pneumonia_prob > normal_prob else ''}")
     print()
 
-    if pred_class == "PNEUMONIA":
-        print("  [!] PNEUMONIA DETECTED -- Recommend clinical follow-up.")
+    if conf < CONFIDENCE_THRESHOLD:
+        print(f"  [?] UNCERTAIN -- Confidence ({conf:.1f}%) below threshold ({CONFIDENCE_THRESHOLD:.0f}%).")
+        print("      Recommend professional review rather than relying on this prediction.")
+    elif pred_class == "PNEUMONIA":
+        print(f"  [!] Screening result: SIGNS CONSISTENT WITH PNEUMONIA (confidence {conf:.1f}%)")
+        print("      This is an AI-assisted screening result, not a diagnosis -- recommend clinical follow-up.")
     else:
-        print("  [OK] No pneumonia indicators detected.")
+        print(f"  [OK] Screening result: NO PNEUMONIA INDICATORS DETECTED (confidence {conf:.1f}%)")
+        print("      This is an AI-assisted screening result, not a diagnosis.")
 
     print()
 
