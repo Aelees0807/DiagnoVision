@@ -1,10 +1,9 @@
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Scan, XCircle, RotateCcw } from 'lucide-react';
+import { Scan, XCircle, RotateCcw, Clock } from 'lucide-react';
 import Container from '@/components/layout/Container';
 import { Button } from '@/components/ui/Button';
 import GatekeeperStatus from '@/components/prediction/GatekeeperStatus';
-import ImagePreview from '@/components/prediction/ImagePreview';
 import GradCAMViewer from '@/components/prediction/GradCAMViewer';
 import PredictionCard from '@/components/prediction/PredictionCard';
 import MedicalDisclaimer from '@/components/prediction/MedicalDisclaimer';
@@ -13,7 +12,7 @@ import { formatDuration } from '@/utils/formatting';
 /**
  * Result page — displays prediction result, confidence, Grad-CAM, disclaimer.
  * Receives data via React Router location state; redirects to /predict if empty.
- * Enhanced with staggered reveal animations and smooth transitions.
+ * Enhanced with glass-panel sections, depth layers, and staggered reveal cascade.
  * @see docs/frontend/routes.md — /result
  * @see docs/frontend/components.md — ResultPage hierarchy
  */
@@ -49,21 +48,24 @@ export default function ResultPage() {
 
   return (
     <Container size="lg">
-      {/* ── Page Title (minimal, the result is the hero) ── */}
+      {/* ── Page Title ── */}
       <div className="py-6 md:py-8">
-        <h1
-          className="text-2xl md:text-3xl font-bold text-foreground tracking-tight animate-fade-in-up"
-        >
-          Screening Result
-        </h1>
-        {result.processing_time_ms && (
-          <p
-            className="text-sm text-muted mt-1 animate-fade-in-up stagger-1"
-            style={{ opacity: 0 }}
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1
+            className="text-2xl md:text-3xl font-bold text-foreground tracking-tight animate-fade-in-up"
           >
-            Processed in {formatDuration(result.processing_time_ms)}
-          </p>
-        )}
+            Screening Result
+          </h1>
+          {result.processing_time_ms && (
+            <span
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full glass-panel text-xs font-medium text-secondary animate-fade-in-up stagger-1"
+              style={{ opacity: 0 }}
+            >
+              <Clock className="h-3 w-3" />
+              {formatDuration(result.processing_time_ms)}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* ── Gatekeeper Status Bar ── */}
@@ -81,30 +83,37 @@ export default function ResultPage() {
 
       {isRejected ? (
         /* ═══════════════════════════════════════════
-           REJECTED Layout
+           REJECTED Layout — glass-panel treatment
            ═══════════════════════════════════════════ */
-        <div
-          style={{ opacity: isRevealed ? 1 : 0 }}
-        >
-          <div className={isRevealed ? 'animate-result-card-enter stagger-2' : ''}
-               style={{ opacity: 0 }}
+        <div style={{ opacity: isRevealed ? 1 : 0 }}>
+          <div
+            className={isRevealed ? 'animate-result-card-enter stagger-2' : ''}
+            style={{ opacity: 0 }}
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
               {/* Left: uploaded image */}
               <div className="flex justify-center">
                 {previewUrl && (
-                  <ImagePreview
-                    src={previewUrl}
-                    alt="Uploaded image"
-                    maxSize={320}
-                    fileName={fileName}
-                  />
+                  <div className="glass-panel rounded-2xl p-4 result-depth-layer">
+                    <div className="rounded-xl overflow-hidden bg-gray-900">
+                      <img
+                        src={previewUrl}
+                        alt="Uploaded image"
+                        className="block w-full h-auto object-contain max-h-[320px]"
+                      />
+                    </div>
+                    {fileName && (
+                      <p className="text-xs text-secondary text-center mt-3 truncate">
+                        {fileName}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
 
               {/* Right: rejection message */}
               <div className="flex flex-col justify-center">
-                <div className="rounded-xl border border-pneumonia-light bg-pneumonia-bg/50 p-6">
+                <div className="glass-panel rounded-xl p-6 border-pneumonia-light/40">
                   <div className="flex items-center gap-3 mb-4">
                     <div className="w-10 h-10 rounded-xl bg-pneumonia/10 flex items-center justify-center">
                       <XCircle className="h-5 w-5 text-pneumonia" />
@@ -136,24 +145,25 @@ export default function ResultPage() {
         </div>
       ) : (
         /* ═══════════════════════════════════════════
-           SUCCESS Layout — two columns on desktop
+           SUCCESS Layout — glass panels with depth
            ═══════════════════════════════════════════ */
         <div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {/* ── Left Column: Images ── */}
             <div className="space-y-6">
-              {/* Grad-CAM Viewer with original image */}
               {previewUrl && (
                 <div
                   className={isRevealed ? 'animate-result-card-enter stagger-2' : ''}
                   style={{ opacity: 0 }}
                 >
-                  <GradCAMViewer
-                    originalImage={previewUrl}
-                    gradcamImage={gradcam?.available ? gradcam.image_base64 : null}
-                    isLoading={false}
-                    error={gradcam?.available ? null : 'Visual explanation unavailable'}
-                  />
+                  <div className="glass-panel rounded-2xl p-4 result-depth-layer">
+                    <GradCAMViewer
+                      originalImage={previewUrl}
+                      gradcamImage={gradcam?.available ? gradcam.image_base64 : null}
+                      isLoading={false}
+                      error={gradcam?.available ? null : 'Visual explanation unavailable'}
+                    />
+                  </div>
                 </div>
               )}
             </div>
@@ -165,14 +175,16 @@ export default function ResultPage() {
                   className={isRevealed ? 'animate-result-card-enter stagger-3' : ''}
                   style={{ opacity: 0 }}
                 >
-                  <PredictionCard
-                    prediction={prediction.classification}
-                    confidence={prediction.confidence}
-                    normalProbability={prediction.probabilities.NORMAL}
-                    pneumoniaProbability={prediction.probabilities.PNEUMONIA}
-                    modelName={model?.name}
-                    animated={isRevealed}
-                  />
+                  <div className="result-depth-layer">
+                    <PredictionCard
+                      prediction={prediction.classification}
+                      confidence={prediction.confidence}
+                      normalProbability={prediction.probabilities.NORMAL}
+                      pneumoniaProbability={prediction.probabilities.PNEUMONIA}
+                      modelName={model?.name}
+                      animated={isRevealed}
+                    />
+                  </div>
                 </div>
               )}
             </div>

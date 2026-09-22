@@ -10,18 +10,20 @@ const heights = {
 
 const colors = {
   normal: {
-    track: 'bg-success-light/60',
-    fill: 'bg-success',
+    track: 'bg-success-light/40',
+    fill: 'from-success/70 to-success',
+    glow: 'confidence-glow-success',
   },
   pneumonia: {
-    track: 'bg-pneumonia-light/60',
-    fill: 'bg-pneumonia',
+    track: 'bg-pneumonia-light/40',
+    fill: 'from-pneumonia/70 to-pneumonia',
+    glow: 'confidence-glow-pneumonia',
   },
 };
 
 /**
  * Visual horizontal bar representing model confidence.
- * Animated fill on mount with CSS transition.
+ * Enhanced with gradient fill, shimmer overlay, and variant-colored glow.
  * @see docs/frontend/components.md — ConfidenceBar
  */
 export default function ConfidenceBar({
@@ -42,7 +44,7 @@ export default function ConfidenceBar({
     return () => cancelAnimationFrame(raf);
   }, [value]);
 
-  const { track, fill } = colors[variant] || colors.normal;
+  const { track, fill, glow } = colors[variant] || colors.normal;
 
   return (
     <div className={cn('w-full', className)}>
@@ -61,7 +63,12 @@ export default function ConfidenceBar({
       )}
 
       <div
-        className={cn('w-full rounded-full overflow-hidden', track, heights[size])}
+        className={cn(
+          'w-full rounded-full overflow-hidden transition-shadow duration-700',
+          track,
+          heights[size],
+          displayValue > 0 && glow
+        )}
         role="progressbar"
         aria-valuenow={Math.round(value)}
         aria-valuemin={0}
@@ -70,11 +77,15 @@ export default function ConfidenceBar({
       >
         <div
           className={cn(
-            'h-full rounded-full transition-all duration-1000 ease-out',
+            'h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden',
+            'bg-gradient-to-r',
             fill
           )}
           style={{ width: `${displayValue}%` }}
-        />
+        >
+          {/* Shimmer overlay */}
+          <div className="absolute inset-0 progress-shimmer" aria-hidden="true" />
+        </div>
       </div>
     </div>
   );

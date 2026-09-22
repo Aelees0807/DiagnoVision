@@ -6,7 +6,7 @@ import ConfidenceBar from './ConfidenceBar';
 
 /**
  * Prediction result card — classification, confidence, probability breakdown.
- * Now includes animated confidence counter and enhanced visual transitions.
+ * Enhanced with glass-panel-elevated, hover depth transitions, and shimmer effect.
  * @see docs/frontend/components.md — PredictionCard
  * @see docs/frontend/design.md §10 — Prediction Result Design
  */
@@ -30,7 +30,8 @@ export default function PredictionCard({
   return (
     <div
       className={cn(
-        'rounded-xl border bg-white shadow-md overflow-hidden',
+        'rounded-xl overflow-hidden card-float',
+        'glass-panel-elevated',
         isNormal ? 'border-l-4 border-l-success' : 'border-l-4 border-l-pneumonia',
         className
       )}
@@ -41,7 +42,7 @@ export default function PredictionCard({
       <div
         className={cn(
           'px-6 py-4 flex items-center gap-3',
-          isNormal ? 'bg-success-bg/50' : 'bg-pneumonia-bg/50'
+          isNormal ? 'bg-success-bg/30' : 'bg-pneumonia-bg/30'
         )}
       >
         <div
@@ -109,9 +110,9 @@ export default function PredictionCard({
                 )}
               />
               <span className="text-sm font-medium text-foreground w-24">NORMAL</span>
-              <div className="flex-1 h-2 bg-surface-hover rounded-full overflow-hidden">
+              <div className="flex-1 h-2 bg-surface-hover/60 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-success/60 rounded-full transition-all duration-1000 ease-out"
+                  className="h-full bg-gradient-to-r from-success/50 to-success/70 rounded-full transition-all duration-1000 ease-out"
                   style={{ width: `${animated ? animatedNormal : normalProbability}%` }}
                 />
               </div>
@@ -132,9 +133,9 @@ export default function PredictionCard({
                 )}
               />
               <span className="text-sm font-medium text-foreground w-24">PNEUMONIA</span>
-              <div className="flex-1 h-2 bg-surface-hover rounded-full overflow-hidden">
+              <div className="flex-1 h-2 bg-surface-hover/60 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-pneumonia/60 rounded-full transition-all duration-1000 ease-out"
+                  className="h-full bg-gradient-to-r from-pneumonia/50 to-pneumonia/70 rounded-full transition-all duration-1000 ease-out"
                   style={{ width: `${animated ? animatedPneumonia : pneumoniaProbability}%` }}
                 />
               </div>
@@ -149,7 +150,7 @@ export default function PredictionCard({
         </div>
 
         {/* Model info */}
-        <div className="pt-3 border-t border-divider">
+        <div className="pt-3 border-t border-divider/50">
           <div className="flex items-center justify-between text-xs text-muted">
             <span>Model: <span className="font-medium text-secondary">{modelName}</span></span>
             <span>Input: <span className="font-medium text-secondary">224×224 RGB</span></span>

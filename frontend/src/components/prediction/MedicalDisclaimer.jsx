@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 
 /**
  * Mandatory AI disclaimer — never dismissible.
+ * Enhanced with glass-panel treatment and warm-tinted backdrop.
  * @see docs/frontend/components.md — MedicalDisclaimer
  */
 export default function MedicalDisclaimer({ variant = 'full', className }) {
@@ -11,7 +12,8 @@ export default function MedicalDisclaimer({ variant = 'full', className }) {
   return (
     <div
       className={cn(
-        'rounded-xl border border-warning-light bg-warning-bg/60',
+        'rounded-xl border border-warning-light/60',
+        'glass-panel',
         isCompact ? 'p-3' : 'p-5',
         className
       )}

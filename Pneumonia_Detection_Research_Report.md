@@ -985,3 +985,4 @@ Deep Radiology Team. (2018). *Pneumonia detection in chest radiographs*. arXiv p
 ## Closing Notes
 
 This report intentionally distinguishes between **verified, citable facts** (dataset sizes, published metrics, architecture descriptions) and **planning/recommendation content** (folder structures, hyperparameter defaults, project ideas), which is standard practice in a real survey paper — reviewers penalize fabricated statistics far more harshly than an honestly incomplete table. Use Sections 4.1 and 5.1 as your workflow for expanding the literature and repository tables to full survey scale, and use Sections 8, 15, and 19 directly as your PyTorch project blueprint.
+

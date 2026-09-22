@@ -4,6 +4,7 @@ import { formatPercent } from '@/utils/formatting';
 
 /**
  * Gatekeeper model status bar — passed or rejected.
+ * Enhanced with glass-panel backdrop and icon pulse animation on passed.
  * @see docs/frontend/components.md — GatekeeperStatus
  */
 export default function GatekeeperStatus({ status, confidence, className }) {
@@ -12,10 +13,11 @@ export default function GatekeeperStatus({ status, confidence, className }) {
   return (
     <div
       className={cn(
-        'flex items-center gap-3 px-5 py-3.5 rounded-xl border transition-all duration-500 animate-gatekeeper-enter',
+        'flex items-center gap-3 px-5 py-3.5 rounded-xl transition-all duration-500',
+        'glass-panel',
         isPassed
-          ? 'bg-success-bg/70 border-success-light text-success'
-          : 'bg-pneumonia-bg/70 border-pneumonia-light text-pneumonia',
+          ? 'border-success-light/60 text-success'
+          : 'border-pneumonia-light/60 text-pneumonia',
         className
       )}
       role="status"
@@ -25,7 +27,8 @@ export default function GatekeeperStatus({ status, confidence, className }) {
       <div
         className={cn(
           'shrink-0 w-9 h-9 rounded-lg flex items-center justify-center',
-          isPassed ? 'bg-success/10' : 'bg-pneumonia/10'
+          isPassed ? 'bg-success/10' : 'bg-pneumonia/10',
+          isPassed && 'animate-icon-pulse-success'
         )}
       >
         {isPassed ? (
