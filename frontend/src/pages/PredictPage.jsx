@@ -5,10 +5,10 @@ import Container from '@/components/layout/Container';
 import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import FileUploader from '@/components/prediction/FileUploader';
-import ImagePreview from '@/components/prediction/ImagePreview';
 import MedicalDisclaimer from '@/components/prediction/MedicalDisclaimer';
 import ProcessingOverlay from '@/components/prediction/ProcessingOverlay';
 import { usePrediction } from '@/hooks/usePrediction';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 /**
  * Predict page — complete upload → preview → validation → submit → loading workflow.
@@ -16,6 +16,7 @@ import { usePrediction } from '@/hooks/usePrediction';
  * @see docs/frontend/components.md — PredictPage hierarchy
  */
 export default function PredictPage() {
+  useDocumentTitle('Analyze');
   const navigate = useNavigate();
   const { status, result, error, uploadProgress, submitPrediction, reset } =
     usePrediction();
@@ -112,24 +113,11 @@ export default function PredictPage() {
           onFileSelect={handleFileSelect}
           onFileRemove={handleFileRemove}
           selectedFile={selectedFile}
+          previewUrl={previewUrl}
           error={validationError}
           disabled={isProcessing}
         />
       </div>
-
-      {/* ── Image Preview ── */}
-      {previewUrl && selectedFile && !isProcessing && (
-        <div className="mb-6 flex justify-center">
-          <ImagePreview
-            src={previewUrl}
-            alt="Uploaded chest X-ray"
-            maxSize={300}
-            onRemove={handleFileRemove}
-            fileName={selectedFile.name}
-            fileSize={selectedFile.size}
-          />
-        </div>
-      )}
 
       {/* ── Error Card ── */}
       {hasError && (

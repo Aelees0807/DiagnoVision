@@ -180,8 +180,8 @@ a:hover {
   bottom: 0;
   z-index: -1;
   background-image:
-    linear-gradient(rgba(30, 107, 138, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(30, 107, 138, 0.025) 1px, transparent 1px);
+    linear-gradient(rgba(30, 107, 138, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 107, 138, 0.06) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 30%, transparent 80%);
   -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 30%, transparent 80%);

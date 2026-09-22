@@ -90,7 +90,7 @@ export default function Navbar() {
       <div
         className={cn(
           'md:hidden overflow-hidden transition-all duration-300 ease-in-out',
-          isMenuOpen ? 'max-h-64 opacity-100' : 'max-h-0 opacity-0'
+          isMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
         )}
       >
         <div className="glass-strong border-t border-border/50 px-4 py-3 space-y-1">

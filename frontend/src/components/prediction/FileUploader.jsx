@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { validateFile } from '@/utils/fileValidation';
 import { formatFileSize } from '@/utils/formatting';
 import { UPLOAD_CONSTRAINTS } from '@/constants';
+import ImagePreview from './ImagePreview';
 
 /**
  * Drag-and-drop + browse file upload zone for X-ray images.
@@ -13,6 +14,7 @@ export default function FileUploader({
   onFileSelect,
   onFileRemove,
   selectedFile,
+  previewUrl,
   error,
   disabled = false,
   acceptedFormats = UPLOAD_CONSTRAINTS.acceptedFormats,
@@ -137,32 +139,18 @@ export default function FileUploader({
 
         {hasFile ? (
           /* ── File Selected State ── */
-          <div className="p-6 flex flex-col items-center gap-3 animate-fade-in-up">
-            <div className="relative">
-              <div className="w-14 h-14 rounded-2xl bg-success-bg flex items-center justify-center">
-                <FileImage className="h-7 w-7 text-success" />
-              </div>
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-medium text-foreground truncate max-w-[260px]">
-                {selectedFile.name}
-              </p>
-              <p className="text-xs text-secondary mt-0.5">
-                {formatFileSize(selectedFile.size)}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
+          <div className="p-6 flex flex-col items-center animate-fade-in-up">
+            <ImagePreview
+              src={previewUrl}
+              alt="Uploaded chest X-ray"
+              maxSize={280}
+              onRemove={(e) => {
+                e?.stopPropagation();
                 onFileRemove();
               }}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-error hover:text-error/80 transition-colors mt-1 px-3 py-1.5 rounded-lg hover:bg-error-bg/60"
-              aria-label="Remove selected file"
-            >
-              <X className="h-3.5 w-3.5" />
-              Remove
-            </button>
+              fileName={selectedFile.name}
+              fileSize={selectedFile.size}
+            />
           </div>
         ) : (
           /* ── Empty / Drag-Over State ── */

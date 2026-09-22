@@ -18,7 +18,7 @@ export default function ParticleField({ count = 35, className = '' }) {
       size: Math.random() * 2.5 + 1,
       speedX: (Math.random() - 0.5) * 0.15,
       speedY: (Math.random() - 0.5) * 0.1 - 0.05,
-      opacity: Math.random() * 0.25 + 0.05,
+      opacity: Math.random() * 0.3 + 0.15,
       pulse: Math.random() * Math.PI * 2,
       pulseSpeed: Math.random() * 0.01 + 0.005,
     }));

@@ -314,7 +314,7 @@ export default function GradCAMViewer({
       {/* ── Full-Screen Modal ── */}
       {isFullScreen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8 image-modal-bg animate-fade-in-up"
+          className="fixed inset-0 h-[100dvh] z-50 flex items-center justify-center p-4 md:p-8 image-modal-bg animate-fade-in-up"
           style={{ animationDuration: '0.2s' }}
           role="dialog"
           aria-modal="true"

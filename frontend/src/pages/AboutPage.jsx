@@ -10,8 +10,10 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import RevealSection from '@/components/ui/RevealSection';
 import MedicalDisclaimer from '@/components/prediction/MedicalDisclaimer';
 import { PNEUMONIA_MODEL, DATASET_INFO } from '@/constants';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 export default function AboutPage() {
+  useDocumentTitle('About');
   return (
     <Container size="lg">
       <PageHeader
@@ -256,7 +258,7 @@ export default function AboutPage() {
                   href="https://github.com/Dhruv-Adhiya/DiagnoVision"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-info text-white font-medium text-sm hover:bg-info/90 transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-info !text-white font-medium text-sm hover:bg-info/90 transition-all duration-200 shadow-sm hover:shadow-md hover:-translate-y-0.5"
                 >
                   <GithubIcon className="h-4 w-4" />
                   View on GitHub

@@ -13,8 +13,10 @@ import { Badge } from '@/components/ui/Badge';
 import RevealSection from '@/components/ui/RevealSection';
 import { MODEL_METRICS, PNEUMONIA_MODEL, GATEKEEPER_MODEL, DATASET_INFO } from '@/constants';
 import { formatPercent } from '@/utils/formatting';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 export default function ModelInfoPage() {
+  useDocumentTitle('Model Information');
   const cm = MODEL_METRICS.confusion_matrix;
 
   return (

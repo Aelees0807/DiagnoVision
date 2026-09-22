@@ -3,8 +3,10 @@ import { Home, ArrowLeft, Activity } from 'lucide-react';
 import Container from '@/components/layout/Container';
 import { Button } from '@/components/ui/Button';
 import ParticleField from '@/components/ui/ParticleField';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 export default function NotFoundPage() {
+  useDocumentTitle('Page Not Found');
   return (
     <Container size="sm">
       <div className="relative flex flex-col items-center justify-center py-24 md:py-32 text-center overflow-hidden">

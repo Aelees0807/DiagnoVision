@@ -12,8 +12,10 @@ import RevealSection from '@/components/ui/RevealSection';
 import ParticleField from '@/components/ui/ParticleField';
 import { MODEL_METRICS, PNEUMONIA_MODEL, DATASET_INFO } from '@/constants';
 import { formatPercent } from '@/utils/formatting';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 export default function LandingPage() {
+  useDocumentTitle('Home');
   return (
     <>
       {/* ═══════════════════════════════════════════════
@@ -39,12 +41,12 @@ export default function LandingPage() {
               AI-Assisted Pneumonia Screening
             </div>
 
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.08] animate-fade-in-up stagger-1" style={{ opacity: 0 }}>
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-[1.08] animate-fade-in-up stagger-1" style={{ opacity: 0 }}>
               <span className="text-foreground">Analyze Chest X-Rays with </span>
               <span className="gradient-text">Deep Learning</span>
             </h1>
 
-            <p className="mt-6 text-lg md:text-xl text-secondary max-w-2xl mx-auto leading-relaxed animate-fade-in-up stagger-2" style={{ opacity: 0 }}>
+            <p className="mt-6 text-base md:text-lg text-secondary max-w-2xl mx-auto leading-relaxed animate-fade-in-up stagger-2" style={{ opacity: 0 }}>
               Upload a pediatric chest X-ray for instant AI analysis. DiagnoVision uses
               an {PNEUMONIA_MODEL.name} model with a gatekeeper system and
               Grad-CAM explainability to provide transparent screening results.

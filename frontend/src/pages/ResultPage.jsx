@@ -8,6 +8,7 @@ import GradCAMViewer from '@/components/prediction/GradCAMViewer';
 import PredictionCard from '@/components/prediction/PredictionCard';
 import MedicalDisclaimer from '@/components/prediction/MedicalDisclaimer';
 import { formatDuration } from '@/utils/formatting';
+import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 /**
  * Result page — displays prediction result, confidence, Grad-CAM, disclaimer.
@@ -17,6 +18,7 @@ import { formatDuration } from '@/utils/formatting';
  * @see docs/frontend/components.md — ResultPage hierarchy
  */
 export default function ResultPage() {
+  useDocumentTitle('Screening Result');
   const location = useLocation();
   const navigate = useNavigate();
   const [isRevealed, setIsRevealed] = useState(false);
