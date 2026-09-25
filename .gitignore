@@ -1,6 +1,8 @@
 # Datasets
 chest_xray/
 chest_xray_split/
+gatekeeper_split/
+bone_fracture_data/
 
 # Model checkpoints
 checkpoints/
@@ -19,6 +21,10 @@ __pycache__/
 dist/
 build/
 
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
 # IDE
 .vscode/
 .idea/
@@ -26,3 +32,7 @@ build/
 # OS
 Thumbs.db
 .DS_Store
+
+.agents/
+docs/
+

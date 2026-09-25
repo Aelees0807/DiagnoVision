@@ -1,0 +1,855 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ═══════════════════════════════════════════════════════
+   DiagnoVision — Design System
+   Source of truth: docs/frontend/design.md
+   Tailwind CSS v4 — CSS-first configuration
+   ═══════════════════════════════════════════════════════ */
+
+@theme {
+  /* ── Font Families ── */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+  /* ── Primary Palette (Medical Teal) ── */
+  --color-primary: #1E6B8A;
+  --color-primary-hover: #185A74;
+  --color-primary-active: #144D5F;
+  --color-primary-light: #E8F4F8;
+  --color-primary-foreground: #FFFFFF;
+
+  /* ── Neutral Text & Backgrounds ── */
+  --color-foreground: #1A202C;
+  --color-secondary: #4A5568;
+  --color-muted: #A0AEC0;
+  --color-background: #F7FAFC;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #EDF2F7;
+
+  /* ── Borders ── */
+  --color-border: #E2E8F0;
+  --color-border-focus: #1E6B8A;
+  --color-divider: #EDF2F7;
+
+  /* ── Success (NORMAL classification) ── */
+  --color-success: #276749;
+  --color-success-bg: #F0FFF4;
+  --color-success-light: #C6F6D5;
+
+  /* ── Warning ── */
+  --color-warning: #975A16;
+  --color-warning-bg: #FFFFF0;
+  --color-warning-light: #FEFCBF;
+
+  /* ── Error (system errors only, NOT for PNEUMONIA) ── */
+  --color-error: #9B2C2C;
+  --color-error-bg: #FFF5F5;
+  --color-error-light: #FED7D7;
+
+  /* ── Pneumonia Classification ── */
+  --color-pneumonia: #C05621;
+  --color-pneumonia-bg: #FFFAF0;
+  --color-pneumonia-light: #FEEBC8;
+
+  /* ── Info ── */
+  --color-info: #2B6CB0;
+  --color-info-bg: #EBF8FF;
+  --color-info-light: #BEE3F8;
+
+  /* ── Border Radius (from design.md) ── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+
+  /* ── Shadows (from design.md) ── */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.08), 0 4px 6px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1), 0 8px 10px rgba(0, 0, 0, 0.04);
+  --shadow-glow: 0 0 20px rgba(30, 107, 138, 0.15);
+  --shadow-focus: 0 0 0 3px rgba(30, 107, 138, 0.3);
+}
+
+/* ═══════════════════════════════════════════════════════
+   Base / Reset Styles
+   ═══════════════════════════════════════════════════════ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--color-foreground);
+  background-color: var(--color-background);
+  line-height: 1.6;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Typography Scale (from design.md)
+   ═══════════════════════════════════════════════════════ */
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+p {
+  margin: 0;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--color-primary-hover);
+}
+
+/* ═══════════════════════════════════════════════════════
+   Animated Background — Subtle Medical Grid + Gradient
+   ═══════════════════════════════════════════════════════ */
+
+.bg-animated-gradient {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -2;
+  background: linear-gradient(
+    135deg,
+    #F7FAFC 0%,
+    #E8F4F8 25%,
+    #F7FAFC 50%,
+    #EBF8FF 75%,
+    #F7FAFC 100%
+  );
+  background-size: 400% 400%;
+  animation: gradient-drift 20s ease infinite;
+}
+
+.bg-medical-grid {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(30, 107, 138, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 107, 138, 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, black 30%, transparent 80%);
+}
+
+/* ═══════════════════════════════════════════════════════
+   Glassmorphism Utility Classes
+   ═══════════════════════════════════════════════════════ */
+
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-strong {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.glass-subtle {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* ═══════════════════════════════════════════════════════
+   Card Depth / Float System
+   ═══════════════════════════════════════════════════════ */
+
+.card-float {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.3s ease;
+}
+
+.card-float:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+}
+
+.card-depth {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 4px 8px rgba(0, 0, 0, 0.04),
+    0 12px 24px rgba(0, 0, 0, 0.06);
+}
+
+/* ═══════════════════════════════════════════════════════
+   Gradient Utilities
+   ═══════════════════════════════════════════════════════ */
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-primary) 0%, #2B6CB0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-info), var(--color-primary));
+  background-size: 200% 100%;
+  animation: gradient-slide 3s linear infinite;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Micro-Interaction Utilities
+   ═══════════════════════════════════════════════════════ */
+
+.hover-lift {
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.25s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+.hover-glow:hover {
+  box-shadow: var(--shadow-glow);
+}
+
+.interactive {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.interactive:hover {
+  transform: translateY(-1px);
+}
+
+.interactive:active {
+  transform: translateY(0);
+}
+
+/* ═══════════════════════════════════════════════════════
+   Keyframe Animations
+   ═══════════════════════════════════════════════════════ */
+
+@keyframes gradient-drift {
+  0%, 100% { background-position: 0% 50%; }
+  25% { background-position: 100% 0%; }
+  50% { background-position: 100% 100%; }
+  75% { background-position: 0% 100%; }
+}
+
+@keyframes gradient-slide {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-up-fade {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes progress-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes upload-pulse {
+  0%, 100% {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 0 rgba(30, 107, 138, 0.2);
+  }
+  50% {
+    border-color: var(--color-primary-hover);
+    box-shadow: 0 0 0 6px rgba(30, 107, 138, 0);
+  }
+}
+
+@keyframes result-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
+    filter: blur(4px);
+  }
+  60% {
+    opacity: 1;
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   Animation Utility Classes
+   ═══════════════════════════════════════════════════════ */
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 3s ease-in-out infinite;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.4s ease-out forwards;
+}
+
+.animate-slide-up-fade {
+  animation: slide-up-fade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-result-reveal {
+  animation: result-reveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Processing overlay — slow ping rings */
+.animate-ping-slow {
+  animation: ping-slow 3s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.animate-ping-slower {
+  animation: ping-slower 4s cubic-bezier(0, 0, 0.2, 1) infinite;
+  animation-delay: 0.5s;
+}
+
+@keyframes ping-slow {
+  0% { transform: scale(1); opacity: 0.15; }
+  75%, 100% { transform: scale(1.8); opacity: 0; }
+}
+
+@keyframes ping-slower {
+  0% { transform: scale(1); opacity: 0.08; }
+  75%, 100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* Animated gradient bottom border for processing card */
+.gradient-border-animated {
+  background: linear-gradient(90deg,
+    var(--color-primary),
+    var(--color-info),
+    var(--color-primary),
+    var(--color-info),
+    var(--color-primary)
+  );
+  background-size: 300% 100%;
+  animation: gradient-slide-border 2.5s linear infinite;
+}
+
+@keyframes gradient-slide-border {
+  0% { background-position: 300% 0; }
+  100% { background-position: 0% 0; }
+}
+
+/* Confidence number pop-in animation */
+.animate-number-pop {
+  animation: number-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes number-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) translateY(8px);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.05) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Result card entrance — more dramatic than slide-up-fade */
+.animate-result-card-enter {
+  animation: result-card-enter 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes result-card-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.96);
+    filter: blur(6px);
+  }
+  40% {
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+  }
+}
+
+/* Gatekeeper status bar slide-in */
+.animate-gatekeeper-enter {
+  animation: gatekeeper-enter 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes gatekeeper-enter {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px) scaleX(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scaleX(1);
+  }
+}
+
+/* Probability bar fill with slight bounce */
+.animate-bar-fill {
+  animation: bar-fill 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes bar-fill {
+  0% { width: 0%; }
+}
+
+/* Progress bar shimmer effect */
+.progress-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: progress-shimmer 1.5s ease-in-out infinite;
+}
+
+/* Stagger animation delays for lists/grids */
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+.stagger-6 { animation-delay: 0.6s; }
+.stagger-7 { animation-delay: 0.7s; }
+.stagger-8 { animation-delay: 0.8s; }
+.stagger-9 { animation-delay: 0.9s; }
+.stagger-10 { animation-delay: 1.0s; }
+
+/* ═══════════════════════════════════════════════════════
+   Phase 4 — Result & Grad-CAM Enhancements
+   ═══════════════════════════════════════════════════════ */
+
+/* Glass panel for result sections — depth without obscuring content */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.05),
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.glass-panel-elevated {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+/* Grad-CAM viewer glow — applied to the container, NOT the image */
+.gradcam-glow {
+  box-shadow:
+    0 0 0 1px rgba(30, 107, 138, 0.1),
+    0 4px 20px rgba(30, 107, 138, 0.08),
+    0 8px 40px rgba(30, 107, 138, 0.04);
+  transition: box-shadow 0.4s ease;
+}
+
+.gradcam-glow:hover {
+  box-shadow:
+    0 0 0 1px rgba(30, 107, 138, 0.15),
+    0 6px 28px rgba(30, 107, 138, 0.12),
+    0 12px 48px rgba(30, 107, 138, 0.06);
+}
+
+/* Animated image reveal — clip-path wipe */
+@keyframes image-reveal {
+  0% {
+    clip-path: inset(0 100% 0 0);
+    opacity: 0.3;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
+.animate-image-reveal {
+  animation: image-reveal 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Shimmer text effect for confidence numbers */
+@keyframes shimmer-text {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    currentColor 0%,
+    currentColor 40%,
+    rgba(255, 255, 255, 0.7) 50%,
+    currentColor 60%,
+    currentColor 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shimmer-text 2s ease-in-out 0.5s 1 forwards;
+}
+
+/* Overlay crossfade — smoother than opacity alone */
+@keyframes overlay-crossfade-in {
+  0% {
+    opacity: 0;
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.animate-overlay-in {
+  animation: overlay-crossfade-in 0.5s ease-out forwards;
+}
+
+/* Opacity slider — custom styling */
+.gradcam-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(
+    to right,
+    var(--color-primary-light) 0%,
+    var(--color-primary) 100%
+  );
+  outline: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.gradcam-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 2px solid white;
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.15),
+    0 0 0 3px rgba(30, 107, 138, 0.15);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.gradcam-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    0 0 0 4px rgba(30, 107, 138, 0.2);
+}
+
+.gradcam-slider:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 3px rgba(30, 107, 138, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.gradcam-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+}
+
+.gradcam-slider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(
+    to right,
+    var(--color-primary-light) 0%,
+    var(--color-primary) 100%
+  );
+}
+
+/* Confidence bar gradient glow variants */
+.confidence-glow-success {
+  box-shadow: 0 0 12px rgba(39, 103, 73, 0.15);
+}
+
+.confidence-glow-pneumonia {
+  box-shadow: 0 0 12px rgba(192, 86, 33, 0.15);
+}
+
+/* Result section depth layer — subtle background behind cards */
+.result-depth-layer {
+  position: relative;
+}
+
+.result-depth-layer::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 20px;
+  background: linear-gradient(
+    135deg,
+    rgba(30, 107, 138, 0.03) 0%,
+    rgba(43, 108, 176, 0.02) 50%,
+    transparent 100%
+  );
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Pulse glow for passed gatekeeper icon */
+@keyframes icon-pulse-success {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(39, 103, 73, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(39, 103, 73, 0);
+  }
+}
+
+.animate-icon-pulse-success {
+  animation: icon-pulse-success 2s ease-in-out 0.5s 2;
+}
+
+/* Full-screen image modal viewer background */
+.image-modal-bg {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(26, 32, 44, 0.95) 0%,
+    rgba(26, 32, 44, 0.98) 100%
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   Focus & Accessibility
+   ═══════════════════════════════════════════════════════ */
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Reduced Motion — Accessibility
+   ═══════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .bg-animated-gradient {
+    animation: none !important;
+  }
+
+  .card-float:hover {
+    transform: none;
+  }
+
+  .hover-lift:hover,
+  .interactive:hover {
+    transform: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   Scrollbar Styling
+   ═══════════════════════════════════════════════════════ */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-secondary);
+}
