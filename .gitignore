@@ -5,7 +5,7 @@ gatekeeper_split/
 bone_fracture_data/
 
 # Model checkpoints
-checkpoints/
+/checkpoints/
 
 # Large archives
 archive.zip
