@@ -111,6 +111,7 @@ async def gradcam(
 
 
 @router.get("/health")
+@router.head("/health")
 async def health():
     import torch
 
