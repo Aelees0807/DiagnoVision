@@ -1,10 +1,17 @@
-﻿# DiagnoVision 🫁
+# DiagnoVision 🫁
 
 **AI-Assisted Pneumonia Screening from Pediatric Chest X-Rays**
+
+> **🌐 Live Demo:** [https://diagnovision.pages.dev](https://diagnovision.pages.dev) *(Replace with your actual Cloudflare Pages link!)*
 
 > ⚠️ **This is a screening aid, not a diagnostic tool.** DiagnoVision has not been validated for clinical use and must not be used to make or inform medical decisions. All outputs should be reviewed by a qualified clinician.
 
 DiagnoVision is a deep learning pipeline that screens pediatric frontal chest X-ray images for signs consistent with pneumonia, classifying each image as **NORMAL** or **PNEUMONIA** using PyTorch and transfer learning (EfficientNet-B0). The tool is scoped to **pediatric frontal chest X-rays only** (dataset ages 1–5, Guangzhou Women and Children's Medical Center) — it is not validated on adult chest X-rays, lateral views, or images from other clinical settings. Built as a college project.
+
+## 🚀 Deployment Architecture
+- **Frontend:** React + Vite + TailwindCSS, hosted statically on **Cloudflare Pages**.
+- **Backend:** FastAPI + PyTorch Docker Container, hosted on **Render Web Services**.
+- **Performance:** Model inference (including Grad-CAM visualization) is heavily optimized using direct NumPy operations to run efficiently on free-tier 0.5 vCPU cloud instances without timing out.
 
 ---
 
