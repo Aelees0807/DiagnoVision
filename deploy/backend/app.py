@@ -64,6 +64,7 @@ app.include_router(router)
 
 
 @app.get("/")
+@app.head("/")
 async def root():
     return {
         "name": "DiagnoVision API",
