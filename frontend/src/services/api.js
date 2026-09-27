@@ -6,7 +6,8 @@ import axios from 'axios';
  * Defaults to http://localhost:8000 for local FastAPI backend.
  */
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  // Use Render URL for production, localhost for local development
+  baseURL: import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8000' : 'https://diagnovision-api.onrender.com'),
   timeout: 60000, // 60s — model inference can take a few seconds
 });
 
