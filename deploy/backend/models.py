@@ -45,6 +45,10 @@ class ModelRegistry:
         """Load both models and set up Grad-CAM. Called once at app startup."""
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"  [Models] Using device: {self.device}")
+        
+        # Optimize CPU threads for limited environments like Render Free Tier (0.5 CPU)
+        if self.device.type == "cpu":
+            torch.set_num_threads(1)
 
         self.pneumonia_model = self._load_pneumonia()
         self.gatekeeper_model = self._load_gatekeeper()
@@ -126,7 +130,7 @@ class GradCAM:
 
         self.model.zero_grad()
         target_score = output[0, target_class]
-        target_score.backward(retain_graph=True)
+        target_score.backward()
 
         weights = self.gradients.mean(dim=(2, 3), keepdim=True)
         cam = (weights * self.activations).sum(dim=1, keepdim=True)
@@ -212,15 +216,13 @@ def generate_gradcam_base64(
     target_class: int = None,
 ) -> dict:
     """Generate Grad-CAM heatmap and return as base64-encoded PNG."""
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
     import matplotlib.cm as cm
 
     try:
         cam_tensor = img_tensor.clone().detach().to(registry.device)
         cam = registry.gradcam.generate(cam_tensor, target_class=target_class)
 
+        # Direct NumPy / PIL manipulation is much faster than matplotlib.pyplot on CPU
         orig_resized = img.resize((IMAGE_SIZE, IMAGE_SIZE), Image.LANCZOS)
         orig_array = np.array(orig_resized).astype(np.float32) / 255.0
 
@@ -228,14 +230,12 @@ def generate_gradcam_base64(
         overlay = 0.55 * orig_array + 0.45 * heatmap_colored
         overlay = np.clip(overlay, 0, 1)
 
-        fig, ax = plt.subplots(1, 1, figsize=(3, 3), dpi=75)
-        ax.imshow(overlay)
-        ax.axis("off")
-        fig.subplots_adjust(left=0, right=1, top=1, bottom=0)
+        # Convert back to uint8 image
+        overlay_uint8 = (overlay * 255).astype(np.uint8)
+        result_img = Image.fromarray(overlay_uint8)
 
         buf = io.BytesIO()
-        fig.savefig(buf, format="png", bbox_inches="tight", pad_inches=0, dpi=150)
-        plt.close(fig)
+        result_img.save(buf, format="PNG", optimize=False)
         buf.seek(0)
 
         image_base64 = base64.b64encode(buf.read()).decode("utf-8")
