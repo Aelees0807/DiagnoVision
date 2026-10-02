@@ -9,6 +9,7 @@ import PredictionCard from '@/components/prediction/PredictionCard';
 import MedicalDisclaimer from '@/components/prediction/MedicalDisclaimer';
 import { formatDuration } from '@/utils/formatting';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { useClientGradCAM } from '@/hooks/useClientGradCAM';
 
 /**
  * Result page — displays prediction result, confidence, Grad-CAM, disclaimer.
@@ -25,6 +26,16 @@ export default function ResultPage() {
 
   const { result, previewUrl, fileName } = location.state || {};
 
+  /* ── Client-side Grad-CAM (fallback when backend Grad-CAM is disabled) ── */
+  const {
+    gradcamDataUrl: clientGradcamUrl,
+    gradcamStatus,
+    gradcamError: clientGradcamError,
+    modelLoadProgress,
+    generateGradCAM,
+    isModelReady,
+  } = useClientGradCAM();
+
   /* ── redirect to /predict if no data ── */
   useEffect(() => {
     if (!result) {
@@ -40,12 +51,38 @@ export default function ResultPage() {
     }
   }, [result]);
 
+  /* ── Auto-generate client-side Grad-CAM when backend doesn't provide one ── */
+  useEffect(() => {
+    if (
+      result &&
+      result.status === 'success' &&
+      previewUrl &&
+      isModelReady &&
+      (!result.gradcam || !result.gradcam.available) &&
+      gradcamStatus === 'idle'
+    ) {
+      generateGradCAM(previewUrl);
+    }
+  }, [result, previewUrl, isModelReady, gradcamStatus, generateGradCAM]);
+
   if (!result) return null;
 
   const isRejected = result.status === 'rejected';
   const gatekeeper = result.gatekeeper;
   const prediction = result.prediction;
   const gradcam = result.gradcam;
+
+  /* ── Resolve Grad-CAM source: prefer backend, fall back to client-side ── */
+  const hasBackendGradcam = gradcam?.available && gradcam?.image_base64;
+  const hasClientGradcam = !!clientGradcamUrl;
+  const gradcamImage = hasBackendGradcam
+    ? gradcam.image_base64
+    : null;
+  const gradcamDataUrl = hasClientGradcam ? clientGradcamUrl : null;
+  const isGradcamLoading = !hasBackendGradcam && (gradcamStatus === 'loading-model' || gradcamStatus === 'generating');
+  const gradcamErrorMsg = hasBackendGradcam
+    ? null
+    : clientGradcamError || null;
   const model = result.model;
 
   return (
@@ -161,9 +198,11 @@ export default function ResultPage() {
                   <div className="glass-panel rounded-2xl p-4 result-depth-layer">
                     <GradCAMViewer
                       originalImage={previewUrl}
-                      gradcamImage={gradcam?.available ? gradcam.image_base64 : null}
-                      isLoading={false}
-                      error={gradcam?.available ? null : 'Visual explanation unavailable'}
+                      gradcamImage={gradcamImage}
+                      gradcamDataUrl={gradcamDataUrl}
+                      isLoading={isGradcamLoading}
+                      loadProgress={modelLoadProgress}
+                      error={gradcamErrorMsg}
                     />
                   </div>
                 </div>

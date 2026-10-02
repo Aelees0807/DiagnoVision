@@ -32,12 +32,7 @@ export default function PredictPage() {
     wakeUpBackend();
   }, []);
 
-  /* ── cleanup object URL on unmount or file change ── */
-  useEffect(() => {
-    return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-    };
-  }, [previewUrl]);
+  /* ── cleanup object URL on unmount disabled to allow ResultPage to use it ── */
 
   /* ── navigate to result on success/rejected ── */
   useEffect(() => {

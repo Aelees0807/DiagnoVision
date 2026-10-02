@@ -24,7 +24,9 @@ const VIEW_MODES = [
 export default function GradCAMViewer({
   originalImage,
   gradcamImage,
+  gradcamDataUrl = null,
   isLoading = false,
+  loadProgress = 0,
   error = null,
   className,
 }) {
@@ -38,8 +40,13 @@ export default function GradCAMViewer({
   const containerRef = useRef(null);
   const fullScreenRef = useRef(null);
 
+  /* Resolve Grad-CAM image source: base64 (backend) or data URL (client) */
+  const resolvedGradcamSrc = gradcamImage
+    ? `data:image/png;base64,${gradcamImage}`
+    : gradcamDataUrl || null;
+
   /* Determine capabilities */
-  const hasGradcam = !!gradcamImage;
+  const hasGradcam = !!resolvedGradcamSrc;
   const canToggle = hasGradcam && !isLoading && !error;
 
   /* Trigger the clip-path reveal animation after mount */
@@ -120,7 +127,7 @@ export default function GradCAMViewer({
         {/* Grad-CAM overlay — sits on top with computed opacity */}
         {canToggle && (
           <img
-            src={`data:image/png;base64,${gradcamImage}`}
+            src={resolvedGradcamSrc}
             alt="Grad-CAM heatmap overlay showing model attention areas"
             className={cn(
               'absolute inset-0 w-full h-full object-contain',
@@ -132,7 +139,7 @@ export default function GradCAMViewer({
           />
         )}
 
-        {/* Loading skeleton overlay */}
+        {/* Loading skeleton overlay with progress */}
         {isLoading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white/80 backdrop-blur-sm">
             <div className="relative">
@@ -142,7 +149,21 @@ export default function GradCAMViewer({
                 style={{ animationDuration: '0.8s' }}
               />
             </div>
-            <p className="text-sm text-secondary font-medium">Generating heatmap…</p>
+            <p className="text-sm text-secondary font-medium">
+              {loadProgress > 0 && loadProgress < 90
+                ? `Loading AI model… ${loadProgress}%`
+                : loadProgress >= 90 && loadProgress < 100
+                  ? 'Initializing model…'
+                  : 'Generating heatmap…'}
+            </p>
+            {loadProgress > 0 && loadProgress < 100 && (
+              <div className="w-32 h-1.5 rounded-full bg-primary-light/30 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-300"
+                  style={{ width: `${loadProgress}%` }}
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -156,7 +177,7 @@ export default function GradCAMViewer({
               Visual explanation is temporarily unavailable.
             </p>
             <p className="text-xs text-muted text-center">
-              The prediction result is still valid.
+              {error}
             </p>
           </div>
         )}
