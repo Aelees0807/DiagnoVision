@@ -14,6 +14,11 @@
 
 import * as ort from 'onnxruntime-web';
 
+// Configure ONNX Runtime to load WASM binaries from a public CDN
+// This prevents Vite from bundling the massive 20MB+ .wasm files,
+// which exceeds Cloudflare Pages 25MB file size limit per asset.
+ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/';
+
 // ── Constants matching training preprocessing ──
 const IMAGE_SIZE = 224;
 const IMAGENET_MEAN = [0.485, 0.456, 0.406];

@@ -5,8 +5,21 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const excludeLargeWasm = () => {
+  return {
+    name: 'exclude-large-wasm',
+    generateBundle(options, bundle) {
+      for (const fileName in bundle) {
+        if (fileName.includes('ort-wasm')) {
+          delete bundle[fileName];
+        }
+      }
+    }
+  };
+};
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), excludeLargeWasm()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
