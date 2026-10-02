@@ -9,6 +9,7 @@ import MedicalDisclaimer from '@/components/prediction/MedicalDisclaimer';
 import ProcessingOverlay from '@/components/prediction/ProcessingOverlay';
 import { usePrediction } from '@/hooks/usePrediction';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { wakeUpBackend } from '@/services/api';
 
 /**
  * Predict page — complete upload → preview → validation → submit → loading workflow.
@@ -25,6 +26,11 @@ export default function PredictPage() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [validationError, setValidationError] = useState(null);
+
+  /* ── wake up the Render backend on page load (free tier sleeps after inactivity) ── */
+  useEffect(() => {
+    wakeUpBackend();
+  }, []);
 
   /* ── cleanup object URL on unmount or file change ── */
   useEffect(() => {

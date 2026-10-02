@@ -4,6 +4,7 @@ Centralized constants for model paths, preprocessing, and thresholds.
 (Standalone version for Hugging Face Spaces deployment)
 """
 
+import os
 from pathlib import Path
 
 # ── Project Paths ──────────────────────────────────────────────
@@ -25,4 +26,10 @@ CONFIDENCE_THRESHOLD = 70.0  # percent
 
 # ── Server ────────────────────────────────────────────────────
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
-MAX_FILE_SIZE_MB = 20
+MAX_FILE_SIZE_MB = 10  # reduced from 20 to limit memory spikes
+
+# ── Memory Optimization ───────────────────────────────────────
+# Grad-CAM backward pass requires ~150 MB extra. Disable by default
+# on memory-constrained environments (Render free = 512 MB).
+# Set ENABLE_GRADCAM=true in environment to re-enable.
+ENABLE_GRADCAM = os.environ.get("ENABLE_GRADCAM", "false").lower() in ("true", "1", "yes")
