@@ -5,8 +5,9 @@ Standalone version for Hugging Face Spaces.
 Runs on port 7860 (HF Spaces default).
 """
 
+import gc
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from models import ModelRegistry
@@ -42,6 +43,17 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+
+# ── GC Middleware — force garbage collection after heavy requests ──
+@app.middleware("http")
+async def gc_after_inference(request: Request, call_next):
+    response = await call_next(request)
+    # Force GC after predict/gradcam endpoints to reclaim memory
+    if request.url.path in ("/api/predict", "/api/gradcam"):
+        gc.collect()
+    return response
+
 
 # ── CORS — allow Cloudflare Pages frontend ─────────────────────
 app.add_middleware(

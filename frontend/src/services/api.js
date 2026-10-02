@@ -8,8 +8,23 @@ import axios from 'axios';
 const api = axios.create({
   // Use Render URL for production, localhost for local development
   baseURL: import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:8000' : 'https://diagnovision-api.onrender.com'),
-  timeout: 60000, // 60s — model inference can take a few seconds
+  timeout: 120000, // 120s — Render free tier cold-starts + inference can take up to 60s
 });
+
+/**
+ * Wake up the Render backend (free tier sleeps after 15 min of inactivity).
+ * Call this early (e.g. on page load) so the server is warm before user submits.
+ * Returns true if the server is healthy, false otherwise.
+ * @returns {Promise<boolean>}
+ */
+export const wakeUpBackend = async () => {
+  try {
+    await api.get('/api/health', { timeout: 60000 });
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 /**
  * Submit an X-ray image for prediction.
@@ -59,4 +74,3 @@ export const checkHealth = async () => {
 };
 
 export default api;
-

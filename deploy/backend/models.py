@@ -1,9 +1,12 @@
 """
 DiagnoVision — Model Loading & Inference (Deployment Version)
 Standalone version with flat imports for Hugging Face Spaces.
+
+Optimized for memory-constrained environments (Render Free Tier = 512 MB).
 """
 
 import io
+import gc
 import base64
 import time
 
@@ -23,7 +26,15 @@ from config import (
     CLASS_NAMES,
     GATEKEEPER_CLASSES,
     CONFIDENCE_THRESHOLD,
+    ENABLE_GRADCAM,
 )
+
+
+def _force_gc():
+    """Force garbage collection to free memory after inference."""
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
 
 # ── Singleton model holder ─────────────────────────────────────
@@ -36,6 +47,7 @@ class ModelRegistry:
         self.gatekeeper_model = None
         self.gradcam = None
         self._loaded = False
+        self.gradcam_enabled = ENABLE_GRADCAM
 
     @property
     def is_loaded(self):
@@ -45,19 +57,34 @@ class ModelRegistry:
         """Load both models and set up Grad-CAM. Called once at app startup."""
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(f"  [Models] Using device: {self.device}")
-        
+
         # Optimize CPU threads for limited environments like Render Free Tier (0.5 CPU)
         if self.device.type == "cpu":
             torch.set_num_threads(1)
+            # Reduce inter-op parallelism too
+            torch.set_num_interop_threads(1)
 
         self.pneumonia_model = self._load_pneumonia()
         self.gatekeeper_model = self._load_gatekeeper()
 
-        # Grad-CAM targeting final conv block of EfficientNet-B0
-        target_layer = self.pneumonia_model.features[-1]
-        self.gradcam = GradCAM(self.pneumonia_model, target_layer)
+        # Only set up Grad-CAM if enabled (disabled by default to save ~150 MB)
+        if self.gradcam_enabled:
+            target_layer = self.pneumonia_model.features[-1]
+            self.gradcam = GradCAM(self.pneumonia_model, target_layer)
+            print("  [Models] Grad-CAM: ENABLED")
+        else:
+            self.gradcam = None
+            print("  [Models] Grad-CAM: DISABLED (set ENABLE_GRADCAM=true to enable)")
 
         self._loaded = True
+
+        # Force GC after loading to reclaim checkpoint loading overhead
+        _force_gc()
+
+        import psutil, os
+        process = psutil.Process(os.getpid())
+        mem_mb = process.memory_info().rss / 1024 / 1024
+        print(f"  [Models] Memory after loading: {mem_mb:.0f} MB")
         print("  [Models] All models loaded successfully.")
 
     def _load_pneumonia(self):
@@ -75,6 +102,10 @@ class ModelRegistry:
             PNEUMONIA_CHECKPOINT, map_location=self.device, weights_only=False
         )
         model.load_state_dict(checkpoint["model_state_dict"])
+        # Free the raw checkpoint dict immediately
+        del checkpoint
+        _force_gc()
+
         model = model.to(self.device)
         model.eval()
         print(f"  [Models] Pneumonia model loaded from {PNEUMONIA_CHECKPOINT.name}")
@@ -94,6 +125,10 @@ class ModelRegistry:
             GATEKEEPER_CHECKPOINT, map_location=self.device, weights_only=False
         )
         model.load_state_dict(checkpoint["model_state_dict"])
+        # Free the raw checkpoint dict immediately
+        del checkpoint
+        _force_gc()
+
         model = model.to(self.device)
         model.eval()
         print(f"  [Models] Gatekeeper model loaded from {GATEKEEPER_CHECKPOINT.name}")
@@ -140,6 +175,12 @@ class GradCAM:
         )
 
         cam = cam.squeeze().cpu().numpy()
+
+        # Free gradient memory immediately
+        self.gradients = None
+        self.activations = None
+        self.model.zero_grad(set_to_none=True)
+
         cam_min, cam_max = cam.min(), cam.max()
         if cam_max - cam_min > 1e-8:
             cam = (cam - cam_min) / (cam_max - cam_min)
@@ -162,8 +203,17 @@ def get_transform():
 
 
 def load_image(file_bytes: bytes) -> Image.Image:
-    """Load image from raw bytes and convert to RGB."""
-    return Image.open(io.BytesIO(file_bytes)).convert("RGB")
+    """Load image from raw bytes, resize early to save memory, convert to RGB."""
+    img = Image.open(io.BytesIO(file_bytes)).convert("RGB")
+    # Immediately downsize large images to save memory
+    # A 4000x4000 RGB image = ~48 MB in memory; 224x224 = ~150 KB
+    max_dim = max(img.size)
+    if max_dim > 512:
+        # Scale down to 512px max side (still larger than 224 for quality)
+        ratio = 512 / max_dim
+        new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
+        img = img.resize(new_size, Image.LANCZOS)
+    return img
 
 
 # ── Inference Functions ────────────────────────────────────────
@@ -216,17 +266,23 @@ def generate_gradcam_base64(
     target_class: int = None,
 ) -> dict:
     """Generate Grad-CAM heatmap and return as base64-encoded PNG."""
+    if not registry.gradcam_enabled or registry.gradcam is None:
+        return {"available": False, "image_base64": None}
+
     import matplotlib.cm as cm
 
     try:
         cam_tensor = img_tensor.clone().detach().to(registry.device)
         cam = registry.gradcam.generate(cam_tensor, target_class=target_class)
 
+        # Free the cloned tensor immediately
+        del cam_tensor
+
         # Direct NumPy / PIL manipulation is much faster than matplotlib.pyplot on CPU
         orig_resized = img.resize((IMAGE_SIZE, IMAGE_SIZE), Image.LANCZOS)
         orig_array = np.array(orig_resized).astype(np.float32) / 255.0
 
-        heatmap_colored = cm.jet(cam)[:, :, :3]
+        heatmap_colored = cm.jet(cam)[:, :, :3].astype(np.float32)
         overlay = 0.55 * orig_array + 0.45 * heatmap_colored
         overlay = np.clip(overlay, 0, 1)
 
@@ -239,6 +295,11 @@ def generate_gradcam_base64(
         buf.seek(0)
 
         image_base64 = base64.b64encode(buf.read()).decode("utf-8")
+
+        # Clean up intermediate arrays
+        del cam, orig_array, heatmap_colored, overlay, overlay_uint8
+        _force_gc()
+
         return {"available": True, "image_base64": image_base64}
 
     except Exception as e:
@@ -254,6 +315,9 @@ def run_full_prediction(
     transform = get_transform()
 
     img = load_image(file_bytes)
+    # Free the raw bytes immediately — we have the PIL image now
+    del file_bytes
+
     img_tensor = transform(img).unsqueeze(0).to(registry.device)
 
     # Step 1: Gatekeeper
@@ -261,6 +325,9 @@ def run_full_prediction(
 
     if gatekeeper_result["result"] == "rejected":
         elapsed = int((time.time() - start_time) * 1000)
+        # Clean up tensors
+        del img_tensor, img
+        _force_gc()
         return {
             "status": "rejected",
             "gatekeeper": gatekeeper_result,
@@ -275,15 +342,19 @@ def run_full_prediction(
     # Step 2: Pneumonia prediction
     prediction_result = run_pneumonia_prediction(registry, img_tensor)
 
-    # Step 3: Grad-CAM
+    # Step 3: Grad-CAM (only if enabled AND requested)
     gradcam_result = {"available": False, "image_base64": None}
-    if include_gradcam:
+    if include_gradcam and registry.gradcam_enabled:
         target_cls = CLASS_NAMES.index(prediction_result["classification"])
         gradcam_result = generate_gradcam_base64(
             registry, img, img_tensor, target_class=target_cls
         )
 
     elapsed = int((time.time() - start_time) * 1000)
+
+    # Clean up tensors after inference
+    del img_tensor, img
+    _force_gc()
 
     return {
         "status": "success",
