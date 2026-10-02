@@ -12,9 +12,18 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  // ONNX Runtime Web uses WASM — exclude from Vite's dep optimization
+  optimizeDeps: {
+    exclude: ['onnxruntime-web'],
+  },
   server: {
     port: 5173,
     open: true,
+    headers: {
+      // Required for SharedArrayBuffer (ONNX Runtime multi-threading)
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
     proxy: {
       // Forward /api requests to the FastAPI backend
       '/api': {
