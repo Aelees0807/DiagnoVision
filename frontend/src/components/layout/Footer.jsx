@@ -25,9 +25,7 @@ export default function Footer() {
 
             {/* Links */}
             <div className="flex items-center gap-6 text-sm text-secondary">
-              <Link to="/model" className="hover:text-primary transition-colors">
-                Model Info
-              </Link>
+
               <Link to="/about" className="hover:text-primary transition-colors">
                 About
               </Link>
@@ -45,7 +43,7 @@ export default function Footer() {
 
             {/* Credits */}
             <p className="text-xs text-muted text-center md:text-right">
-              © {new Date().getFullYear()} DiagnoVision · Academic Research Project
+              © {new Date().getFullYear()} DiagnoVision
             </p>
           </div>
         </div>

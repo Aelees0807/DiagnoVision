@@ -67,6 +67,5 @@ export const DATASET_INFO = {
 /** Navigation links */
 export const NAV_LINKS = [
   { to: '/predict', label: 'Analyze' },
-  { to: '/model', label: 'Model Info' },
   { to: '/about', label: 'About' },
 ];

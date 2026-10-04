@@ -1,7 +1,8 @@
+import { useEffect, useLayoutEffect } from 'react';
 import {
-  ExternalLink, Brain, Database, Code2,
+  ExternalLink, Brain,
   BookOpen, HeartPulse, Sparkles, Shield, Eye,
-  Stethoscope, GraduationCap, FileText,
+  Stethoscope, GraduationCap, Users, Mail, User,
 } from 'lucide-react';
 import GithubIcon from '@/components/ui/GithubIcon';
 import Container from '@/components/layout/Container';
@@ -9,11 +10,16 @@ import PageHeader from '@/components/layout/PageHeader';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import RevealSection from '@/components/ui/RevealSection';
 import MedicalDisclaimer from '@/components/prediction/MedicalDisclaimer';
-import { PNEUMONIA_MODEL, DATASET_INFO } from '@/constants';
+import { PNEUMONIA_MODEL } from '@/constants';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 export default function AboutPage() {
   useDocumentTitle('About');
+  
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, []);
+
   return (
     <Container size="lg">
       <PageHeader
@@ -102,134 +108,8 @@ export default function AboutPage() {
         </RevealSection>
       </section>
 
-      {/* ─── Key Features ─── */}
-      <section className="mb-12">
-        <RevealSection>
-          <h2 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            Key Features
-          </h2>
-        </RevealSection>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[
-            {
-              icon: Shield,
-              title: 'Image Validation',
-              desc: 'MobileNetV3-Small gatekeeper rejects non-chest-X-ray images before prediction.',
-              badge: 'Safety',
-              badgeColor: 'success',
-            },
-            {
-              icon: Brain,
-              title: 'Deep Learning Classification',
-              desc: 'EfficientNet-B0 with transfer learning provides accurate pneumonia screening.',
-              badge: 'Core',
-              badgeColor: 'info',
-            },
-            {
-              icon: Eye,
-              title: 'Explainable AI',
-              desc: 'Grad-CAM heatmaps show which X-ray regions the model focused on.',
-              badge: 'Transparency',
-              badgeColor: 'info',
-            },
-          ].map(({ icon: Icon, title, desc, badge, badgeColor }, i) => {
-            const badgeClasses = {
-              success: 'bg-success-bg text-success border-success-light',
-              info: 'bg-info-bg text-info border-info-light',
-            };
-            return (
-              <RevealSection key={title} delay={i * 100}>
-                <div className="group relative h-full bg-white/70 backdrop-blur-sm border border-border rounded-xl p-5 card-float overflow-hidden">
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/3 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="relative">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Icon className="h-5 w-5 text-primary" />
-                      <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${badgeClasses[badgeColor]}`}>
-                        {badge}
-                      </span>
-                    </div>
-                    <h3 className="font-semibold text-foreground mb-1.5">{title}</h3>
-                    <p className="text-sm text-secondary leading-relaxed">{desc}</p>
-                  </div>
-                </div>
-              </RevealSection>
-            );
-          })}
-        </div>
-      </section>
 
-      {/* ─── Technology Stack ─── */}
-      <section className="mb-12">
-        <RevealSection>
-          <h2 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
-            <Code2 className="h-5 w-5 text-primary" />
-            Technology Stack
-          </h2>
-        </RevealSection>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Backend/ML */}
-          <RevealSection delay={0}>
-            <Card variant="default" hover className="h-full overflow-hidden relative">
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-              <CardHeader>
-                <CardTitle as="h3" className="text-lg flex items-center gap-2">
-                  <Brain className="h-4 w-4 text-primary" />
-                  Backend & ML
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3 text-sm text-secondary">
-                  {[
-                    { label: 'Framework', value: 'PyTorch' },
-                    { label: 'Pneumonia Model', value: PNEUMONIA_MODEL.name },
-                    { label: 'Gatekeeper', value: 'MobileNetV3-Small' },
-                    { label: 'Explainability', value: 'Grad-CAM (gradient-weighted class activation)' },
-                    { label: 'Training Data', value: `${DATASET_INFO.name} (${DATASET_INFO.totalImages.toLocaleString()} images)` },
-                  ].map(({ label, value }) => (
-                    <li key={label} className="flex justify-between items-start gap-4 py-1 border-b border-border/30 last:border-0">
-                      <span className="text-muted shrink-0">{label}</span>
-                      <span className="text-foreground font-medium text-right">{value}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </RevealSection>
-
-          {/* Frontend */}
-          <RevealSection delay={150}>
-            <Card variant="default" hover className="h-full overflow-hidden relative">
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-info/30 to-transparent" />
-              <CardHeader>
-                <CardTitle as="h3" className="text-lg flex items-center gap-2">
-                  <Code2 className="h-4 w-4 text-info" />
-                  Frontend
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3 text-sm text-secondary">
-                  {[
-                    { label: 'Framework', value: 'React 19' },
-                    { label: 'Build Tool', value: 'Vite' },
-                    { label: 'Styling', value: 'Tailwind CSS v4' },
-                    { label: 'Components', value: 'shadcn/ui patterns' },
-                    { label: 'Charts', value: 'Recharts' },
-                    { label: 'Icons', value: 'Lucide React' },
-                  ].map(({ label, value }) => (
-                    <li key={label} className="flex justify-between items-start gap-4 py-1 border-b border-border/30 last:border-0">
-                      <span className="text-muted shrink-0">{label}</span>
-                      <span className="text-foreground font-medium text-right">{value}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </RevealSection>
-        </div>
-      </section>
 
       {/* ─── Repository ─── */}
       <section className="mb-12">
@@ -270,63 +150,66 @@ export default function AboutPage() {
         </RevealSection>
       </section>
 
-      {/* ─── Dataset ─── */}
+      {/* ─── Developers ─── */}
       <section className="mb-12">
         <RevealSection>
           <h2 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
-            <Database className="h-5 w-5 text-primary" />
-            Dataset
+            <Users className="h-5 w-5 text-primary" />
+            Developers
           </h2>
         </RevealSection>
 
         <RevealSection delay={100}>
-          <Card variant="default" className="overflow-hidden relative">
-            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
-            <CardContent className="py-5">
-              <p className="text-secondary leading-relaxed">
-                The model was trained on the <strong>{DATASET_INFO.name}</strong> dataset
-                from {DATASET_INFO.source}, containing {DATASET_INFO.totalImages.toLocaleString()} images
-                of {DATASET_INFO.imageType.toLowerCase()}.
-              </p>
-              <a
-                href={DATASET_INFO.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm text-primary font-medium mt-3 hover:underline"
-              >
-                View Dataset on Kaggle
-                <ExternalLink className="h-3 w-3" />
-              </a>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+            {[
+              { name: 'Dhruv Adhiya', image: '/Photos/DhruvAdhiya.png' },
+              { name: 'Aelees Bhuva', image: '/Photos/AeleesBhuva.png' },
+              { name: 'Yash Boghara', image: '/Photos/YashBoghara.jpeg' },
+              { name: 'Preet Dhoriyani', image: '/Photos/PreetDhoriyani.jpeg' },
+            ].map((dev) => (
+              <Card key={dev.name} variant="default" hover className="overflow-hidden group">
+                <div className="aspect-square bg-muted/20 flex items-center justify-center relative overflow-hidden">
+                  <img 
+                    src={dev.image} 
+                    alt={dev.name} 
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                  />
+                </div>
+                <CardContent className="py-5 text-center">
+                  <h3 className="text-lg font-semibold text-foreground">{dev.name}</h3>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </RevealSection>
       </section>
 
-      {/* ─── Research Context ─── */}
+      {/* ─── Contact ─── */}
       <section className="mb-12">
         <RevealSection>
           <h2 className="text-xl font-semibold text-foreground mb-6 flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" />
-            Research Context
+            <Mail className="h-5 w-5 text-primary" />
+            Contact Us
           </h2>
         </RevealSection>
 
         <RevealSection delay={100}>
           <Card variant="default" className="overflow-hidden relative">
             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
-            <CardContent className="py-5">
-              <p className="text-secondary leading-relaxed">
-                DiagnoVision explores the intersection of deep learning and medical imaging.
-                The project demonstrates how convolutional neural networks — specifically transfer
-                learning with EfficientNet-B0 — can be applied to chest X-ray classification for
-                pneumonia detection, combined with explainability techniques (Grad-CAM) to make
-                AI predictions interpretable.
-              </p>
-              <p className="text-secondary leading-relaxed mt-3">
-                This is an academic project that serves as a practical demonstration of
-                machine learning concepts including transfer learning, data augmentation,
-                model evaluation, and explainable AI in a medical imaging context.
-              </p>
+            <CardContent className="py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h3 className="font-semibold text-foreground">Get in Touch</h3>
+                <p className="text-sm text-secondary mt-1">
+                  Have questions, feedback, or inquiries? Feel free to reach out to us via email.
+                </p>
+              </div>
+              <a
+                href="mailto:diagnovision@gmail.com"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-primary/10 text-primary font-medium text-sm hover:bg-primary/20 transition-colors shrink-0"
+              >
+                <Mail className="h-4 w-4" />
+                diagnovision@gmail.com
+              </a>
             </CardContent>
           </Card>
         </RevealSection>

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import {
   ArrowRight, Shield, Brain, Eye, Scan, Activity,
   CheckCircle, Upload, Cpu, FileCheck, Stethoscope,
-  BarChart3, Layers, Zap, HeartPulse,
+  BarChart3, Layers, Zap, HeartPulse, Sparkles,
 } from 'lucide-react';
 import Container from '@/components/layout/Container';
 import { Button } from '@/components/ui/Button';
@@ -13,9 +13,15 @@ import ParticleField from '@/components/ui/ParticleField';
 import { MODEL_METRICS, PNEUMONIA_MODEL, DATASET_INFO } from '@/constants';
 import { formatPercent } from '@/utils/formatting';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
+import { useLayoutEffect } from 'react';
 
 export default function LandingPage() {
   useDocumentTitle('Home');
+  
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, []);
+
   return (
     <>
       {/* ═══════════════════════════════════════════════
@@ -59,11 +65,7 @@ export default function LandingPage() {
                   <ArrowRight className="h-4 w-4 ml-1" />
                 </Button>
               </Link>
-              <Link to="/model">
-                <Button variant="secondary" size="lg" icon={<Brain className="h-5 w-5" />}>
-                  View Model Details
-                </Button>
-              </Link>
+
             </div>
 
             {/* Trust indicators */}
@@ -85,80 +87,6 @@ export default function LandingPage() {
         </Container>
       </section>
 
-      {/* ═══════════════════════════════════════════════
-          PRODUCT INTRODUCTION — What DiagnoVision is
-          ═══════════════════════════════════════════════ */}
-      <section className="py-16 md:py-24">
-        <Container size="xl">
-          <RevealSection>
-            <div className="relative rounded-2xl glass-strong border border-border/50 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.02] to-info/[0.02]" />
-              <div className="relative p-8 md:p-12 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                <div>
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-light text-primary text-xs font-semibold mb-4">
-                    <HeartPulse className="h-3.5 w-3.5" />
-                    About This Project
-                  </div>
-                  <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
-                    AI-Powered Screening for Pediatric Pneumonia
-                  </h2>
-                  <p className="text-secondary leading-relaxed">
-                    Pneumonia is a leading cause of death in children under five worldwide.
-                    Manual chest X-ray interpretation is time-consuming, subject to
-                    inter-observer variability, and dependent on specialist availability.
-                  </p>
-                  <p className="text-secondary leading-relaxed mt-4">
-                    DiagnoVision provides a fast, consistent AI-assisted screening layer
-                    that can flag probable pneumonia cases for clinical follow-up — using
-                    transfer learning, input validation, and visual explainability.
-                  </p>
-                </div>
-
-                {/* Visual representation */}
-                <div className="relative flex items-center justify-center">
-                  <div className="relative w-full max-w-xs mx-auto">
-                    {/* 3D-inspired stacked cards */}
-                    <div className="absolute -top-3 -left-3 w-full h-full rounded-2xl bg-primary/5 border border-primary/10 transform rotate-3" />
-                    <div className="absolute -top-1.5 -left-1.5 w-full h-full rounded-2xl bg-info/5 border border-info/10 transform rotate-1.5" />
-                    <div className="relative rounded-2xl bg-white border border-border p-6 shadow-lg">
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-info flex items-center justify-center">
-                            <Stethoscope className="h-4 w-4 text-white" />
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted">AI Screening Tool</p>
-                            <p className="text-sm font-semibold text-foreground">DiagnoVision v1.0</p>
-                          </div>
-                        </div>
-                        <div className="h-px bg-border" />
-                        <div className="space-y-2.5 text-xs text-secondary">
-                          <div className="flex items-center justify-between">
-                            <span>Classification Model</span>
-                            <span className="font-mono font-medium text-foreground">{PNEUMONIA_MODEL.name}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span>Input Resolution</span>
-                            <span className="font-mono font-medium text-foreground">{PNEUMONIA_MODEL.input_size} RGB</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span>Training Images</span>
-                            <span className="font-mono font-medium text-foreground">{DATASET_INFO.totalImages.toLocaleString()}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span>Test Accuracy</span>
-                            <span className="font-mono font-medium text-primary">{formatPercent(MODEL_METRICS.accuracy)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </RevealSection>
-        </Container>
-      </section>
 
       {/* ═══════════════════════════════════════════════
           FEATURES — AI Screening, Gatekeeper, Grad-CAM
@@ -166,11 +94,11 @@ export default function LandingPage() {
       <section className="py-16 md:py-24">
         <Container size="xl">
           <RevealSection>
-            <div className="text-center mb-12">
+            <div className="flex flex-col items-center text-center mb-12">
               <h2 className="text-2xl md:text-3xl font-bold text-foreground">
                 How DiagnoVision Works
               </h2>
-              <p className="mt-3 text-secondary max-w-xl mx-auto">
+              <p className="mt-3 text-secondary max-w-xl text-center">
                 A multi-stage pipeline combining image validation, deep learning classification,
                 and visual explainability.
               </p>
@@ -259,11 +187,11 @@ export default function LandingPage() {
 
         <Container size="xl">
           <RevealSection>
-            <div className="text-center mb-4">
+            <div className="flex flex-col items-center text-center mb-4">
               <h2 className="text-2xl md:text-3xl font-bold text-foreground">
                 The Prediction Pipeline
               </h2>
-              <p className="mt-3 text-secondary max-w-lg mx-auto">
+              <p className="mt-3 text-secondary max-w-lg text-center">
                 Every uploaded image passes through a multi-stage validation and analysis pipeline.
               </p>
             </div>
@@ -364,11 +292,11 @@ export default function LandingPage() {
       <section className="py-16 md:py-24">
         <Container size="xl">
           <RevealSection>
-            <div className="text-center mb-12">
+            <div className="flex flex-col items-center text-center mb-12">
               <h2 className="text-2xl md:text-3xl font-bold text-foreground">
                 Simple 3-Step Workflow
               </h2>
-              <p className="mt-3 text-secondary max-w-md mx-auto">
+              <p className="mt-3 text-secondary max-w-md text-center">
                 From upload to result in seconds — designed for simplicity.
               </p>
             </div>
@@ -403,58 +331,65 @@ export default function LandingPage() {
         </Container>
       </section>
 
-      {/* ═══════════════════════════════════════════════
-          MODEL PERFORMANCE — Key statistics
-          ═══════════════════════════════════════════════ */}
-      <section className="py-16 md:py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-info-light/10 to-transparent" aria-hidden="true" />
-
+      {/* ─── Key Features ─── */}
+      <section className="py-16 md:py-24 bg-surface-hover/30">
         <Container size="xl">
           <RevealSection>
-            <div className="text-center mb-12">
-              <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-                Model Performance
+            <div className="flex flex-col items-center text-center mb-12">
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
+                <Sparkles className="h-6 w-6 text-primary" />
+                Key Features
               </h2>
-              <p className="mt-3 text-secondary max-w-xl mx-auto">
-                Evaluated on a held-out test set of {MODEL_METRICS.test_set_size} images.
-                All metrics are from the repository&apos;s evaluation results.
-              </p>
             </div>
           </RevealSection>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-            <MetricCard
-              label="Test Accuracy"
-              value={formatPercent(MODEL_METRICS.accuracy)}
-              icon={<CheckCircle className="h-5 w-5" />}
-            />
-            <MetricCard
-              label="Sensitivity"
-              value={formatPercent(MODEL_METRICS.sensitivity)}
-              description="Pneumonia detection rate"
-            />
-            <MetricCard
-              label="Specificity"
-              value={formatPercent(MODEL_METRICS.specificity)}
-              description="Normal identification rate"
-            />
-            <MetricCard
-              label="F1 (Pneumonia)"
-              value={formatPercent(MODEL_METRICS.f1_pneumonia)}
-              description="Harmonic mean precision/recall"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              {
+                icon: Shield,
+                title: 'Image Validation',
+                desc: 'MobileNetV3-Small gatekeeper rejects non-chest-X-ray images before prediction.',
+                badge: 'Safety',
+                badgeColor: 'success',
+              },
+              {
+                icon: Brain,
+                title: 'Deep Learning Classification',
+                desc: 'EfficientNet-B0 with transfer learning provides accurate pneumonia screening.',
+                badge: 'Core',
+                badgeColor: 'info',
+              },
+              {
+                icon: Eye,
+                title: 'Explainable AI',
+                desc: 'Grad-CAM heatmaps show which X-ray regions the model focused on.',
+                badge: 'Transparency',
+                badgeColor: 'info',
+              },
+            ].map(({ icon: Icon, title, desc, badge, badgeColor }, i) => {
+              const badgeClasses = {
+                success: 'bg-success-bg text-success border-success-light',
+                info: 'bg-info-bg text-info border-info-light',
+              };
+              return (
+                <RevealSection key={title} delay={i * 100}>
+                  <div className="group relative h-full bg-white/70 backdrop-blur-sm border border-border rounded-xl p-5 card-float overflow-hidden">
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/3 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="relative">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Icon className="h-5 w-5 text-primary" />
+                        <span className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border ${badgeClasses[badgeColor]}`}>
+                          {badge}
+                        </span>
+                      </div>
+                      <h3 className="font-semibold text-foreground mb-1.5">{title}</h3>
+                      <p className="text-sm text-secondary leading-relaxed">{desc}</p>
+                    </div>
+                  </div>
+                </RevealSection>
+              );
+            })}
           </div>
-
-          <RevealSection delay={200}>
-            <div className="text-center mt-8">
-              <Link to="/model">
-                <Button variant="outline" icon={<BarChart3 className="h-4 w-4" />}>
-                  View Full Model Details
-                  <ArrowRight className="h-4 w-4 ml-1" />
-                </Button>
-              </Link>
-            </div>
-          </RevealSection>
         </Container>
       </section>
 
@@ -473,11 +408,11 @@ export default function LandingPage() {
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" aria-hidden="true" />
               <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full blur-3xl" aria-hidden="true" />
 
-              <div className="relative px-8 py-12 md:py-16 text-center">
+              <div className="relative px-8 py-12 md:py-16 flex flex-col items-center text-center">
                 <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
                   Ready to Analyze an X-Ray?
                 </h2>
-                <p className="text-white/80 max-w-md mx-auto mb-8">
+                <p className="text-white/80 max-w-md text-center mb-12">
                   Upload a pediatric chest X-ray image and receive an AI screening result
                   with visual explanations in seconds.
                 </p>

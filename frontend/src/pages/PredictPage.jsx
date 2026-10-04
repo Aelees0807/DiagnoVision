@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useLayoutEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Scan, RefreshCw, AlertCircle } from 'lucide-react';
 import Container from '@/components/layout/Container';
@@ -18,6 +18,11 @@ import { wakeUpBackend } from '@/services/api';
  */
 export default function PredictPage() {
   useDocumentTitle('Analyze');
+  
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, []);
+
   const navigate = useNavigate();
   const { status, result, error, uploadProgress, submitPrediction, reset } =
     usePrediction();
@@ -157,7 +162,9 @@ export default function PredictPage() {
       </div>
 
       {/* ── Disclaimer ── */}
-      <MedicalDisclaimer variant="compact" />
+      <div className="mb-12">
+        <MedicalDisclaimer variant="compact" />
+      </div>
     </Container>
   );
 }
