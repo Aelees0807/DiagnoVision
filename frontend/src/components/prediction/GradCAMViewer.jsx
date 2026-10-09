@@ -103,6 +103,25 @@ export default function GradCAMViewer({
   const computedOverlayOpacity = viewMode === 'overlay' ? 1 : viewMode === 'blend' ? overlayOpacity : 0;
   const showOriginal = viewMode === 'original' || viewMode === 'blend';
 
+  /* ── Track original image dimensions for pixel-perfect overlay alignment ── */
+  const originalImgRef = useRef(null);
+  const [imgDims, setImgDims] = useState(null);
+
+  /**
+   * Measure the original image's actual rendered size.
+   * Called on load and on window resize to keep the overlay in sync.
+   */
+  const measureOriginalImage = useCallback(() => {
+    const img = originalImgRef.current;
+    if (!img) return;
+    setImgDims({ width: img.clientWidth, height: img.clientHeight });
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('resize', measureOriginalImage);
+    return () => window.removeEventListener('resize', measureOriginalImage);
+  }, [measureOriginalImage]);
+
   /* Build the image display (reused in inline + fullscreen) */
   const renderImageViewer = (isModal = false) => {
     const maxH = isModal ? 'max-h-[80vh]' : 'max-h-[400px]';
@@ -111,6 +130,7 @@ export default function GradCAMViewer({
       <div className="relative w-full overflow-hidden bg-gray-900 rounded-xl">
         {/* Original X-ray — always the base layer */}
         <img
+          ref={!isModal ? originalImgRef : undefined}
           src={originalImage}
           alt="Uploaded chest X-ray image"
           className={cn(
@@ -121,20 +141,22 @@ export default function GradCAMViewer({
             showOriginal ? 'opacity-100' : 'opacity-0',
             'transition-opacity duration-500'
           )}
+          onLoad={!isModal ? measureOriginalImage : undefined}
           draggable={false}
         />
 
-        {/* Grad-CAM overlay — sits on top with computed opacity */}
+        {/* Grad-CAM overlay — absolutely positioned, matched to original image size */}
         {canToggle && (
           <img
             src={resolvedGradcamSrc}
             alt="Grad-CAM heatmap overlay showing model attention areas"
-            className={cn(
-              'absolute inset-0 w-full h-full object-contain',
-              'transition-opacity duration-500 ease-out',
-              maxH
-            )}
-            style={{ opacity: computedOverlayOpacity }}
+            className="absolute top-0 left-0 transition-opacity duration-500 ease-out"
+            style={{
+              width: isModal ? '100%' : (imgDims ? `${imgDims.width}px` : '100%'),
+              height: isModal ? '100%' : (imgDims ? `${imgDims.height}px` : '100%'),
+              objectFit: 'fill',
+              opacity: computedOverlayOpacity,
+            }}
             draggable={false}
           />
         )}
