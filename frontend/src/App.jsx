@@ -1,4 +1,4 @@
-import { Suspense, lazy, useState, useEffect, useLayoutEffect } from 'react';
+import { Suspense, lazy, useLayoutEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/layout/Navbar.jsx';
 import Footer from './components/layout/Footer.jsx';
@@ -30,49 +30,11 @@ function ScrollToTop() {
 }
 
 export default function App() {
-  const [showSplash, setShowSplash] = useState(false);
-  const [fadeOut, setFadeOut] = useState(false);
-
-  useEffect(() => {
-    // Only show splash screen once per session
-    const splashSeen = sessionStorage.getItem('diagnovision_splash_seen');
-    if (!splashSeen) {
-      setShowSplash(true);
-      sessionStorage.setItem('diagnovision_splash_seen', 'true');
-      
-      // Fallback timeout in case video onEnded doesn't fire
-      const timer = setTimeout(() => {
-        handleSplashEnd();
-      }, 8000); // adjust based on video length
-      
-      return () => clearTimeout(timer);
-    }
-  }, []);
-
-  const handleSplashEnd = () => {
-    setFadeOut(true);
-    setTimeout(() => {
-      setShowSplash(false);
-    }, 800); // match fade out duration
-  };
 
   return (
     <BrowserRouter>
       <ScrollToTop />
-      {showSplash && (
-        <div 
-          className={`fixed inset-0 z-[9999] bg-black flex items-center justify-center transition-opacity duration-700 ${fadeOut ? 'opacity-0' : 'opacity-100'}`}
-        >
-          <video 
-            src="/intro.mp4" 
-            autoPlay 
-            muted 
-            playsInline
-            className="w-full h-full object-cover"
-            onEnded={handleSplashEnd}
-          />
-        </div>
-      )}
+
 
       {/* Skip-to-content link for keyboard accessibility */}
       <a 
