@@ -51,11 +51,17 @@ export default function ResultPage() {
     }
   }, [result]);
 
+  /* ── Only generate Grad-CAM when prediction is PNEUMONIA ── */
+  const isPneumonia =
+    result?.status === 'success' &&
+    result?.prediction?.classification?.toUpperCase() === 'PNEUMONIA';
+
   /* ── Auto-generate client-side Grad-CAM when backend doesn't provide one ── */
   useEffect(() => {
     if (
       result &&
       result.status === 'success' &&
+      isPneumonia &&
       previewUrl &&
       isModelReady &&
       (!result.gradcam || !result.gradcam.available) &&
@@ -63,7 +69,7 @@ export default function ResultPage() {
     ) {
       generateGradCAM(previewUrl);
     }
-  }, [result, previewUrl, isModelReady, gradcamStatus, generateGradCAM]);
+  }, [result, previewUrl, isPneumonia, isModelReady, gradcamStatus, generateGradCAM]);
 
   if (!result) return null;
 
@@ -73,16 +79,17 @@ export default function ResultPage() {
   const gradcam = result.gradcam;
 
   /* ── Resolve Grad-CAM source: prefer backend, fall back to client-side ── */
-  const hasBackendGradcam = gradcam?.available && gradcam?.image_base64;
-  const hasClientGradcam = !!clientGradcamUrl;
+  /* Only provide Grad-CAM data when prediction is PNEUMONIA */
+  const hasBackendGradcam = isPneumonia && gradcam?.available && gradcam?.image_base64;
+  const hasClientGradcam = isPneumonia && !!clientGradcamUrl;
   const gradcamImage = hasBackendGradcam
     ? gradcam.image_base64
     : null;
   const gradcamDataUrl = hasClientGradcam ? clientGradcamUrl : null;
-  const isGradcamLoading = !hasBackendGradcam && (gradcamStatus === 'loading-model' || gradcamStatus === 'generating');
-  const gradcamErrorMsg = hasBackendGradcam
-    ? null
-    : clientGradcamError || null;
+  const isGradcamLoading = isPneumonia && !hasBackendGradcam && (gradcamStatus === 'loading-model' || gradcamStatus === 'generating');
+  const gradcamErrorMsg = isPneumonia
+    ? (hasBackendGradcam ? null : clientGradcamError || null)
+    : null;
   const model = result.model;
 
   return (
