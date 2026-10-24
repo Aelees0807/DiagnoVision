@@ -282,10 +282,10 @@ export async function fetchAdminPredictions({
     if (search && search.trim()) {
       const q = search.trim().toLowerCase();
       filtered = filtered.filter(item =>
-        item.id.toLowerCase().includes(q) ||
-        item.predicted_class?.toLowerCase().includes(q) ||
-        item.patients?.patient_name?.toLowerCase().includes(q) ||
-        item.patients?.patient_id?.toLowerCase().includes(q)
+        String(item.id || '').toLowerCase().includes(q) ||
+        String(item.predicted_class || '').toLowerCase().includes(q) ||
+        String(item.patients?.patient_name || '').toLowerCase().includes(q) ||
+        String(item.patients?.patient_id || '').toLowerCase().includes(q)
       );
     }
 

@@ -478,14 +478,31 @@ export default function AdminDashboardPage() {
             ) : (
               <div className="divide-y divide-border/40">
                 {predictions.map(p => {
+                  if (!p) return null;
                   const isPneu = p.predicted_class === 'PNEUMONIA';
-                  const thumbUrl = scanThumbnails[p.image_path];
-                  const hasReview = p.staff_reviews && p.staff_reviews.length > 0;
+                  const thumbUrl = p.image_path ? scanThumbnails[p.image_path] : null;
+                  const hasReview = Array.isArray(p.staff_reviews) && p.staff_reviews.length > 0;
                   const latestReview = hasReview ? p.staff_reviews[0] : null;
+
+                  const rawId = p.id ? String(p.id) : '';
+                  const shortId = rawId.length > 8 ? rawId.slice(0, 8) + '…' : rawId;
+
+                  const confRaw = typeof p.confidence_score === 'number'
+                    ? p.confidence_score
+                    : parseFloat(p.confidence_score || '0');
+                  const confPercent = confRaw <= 1 && confRaw > 0 ? confRaw * 100 : confRaw;
+                  const formattedConf = !isNaN(confPercent) ? confPercent.toFixed(1) : '—';
+
+                  const formattedDate = p.created_at
+                    ? new Date(p.created_at).toLocaleString('en-US', {
+                        month: 'short', day: 'numeric', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                      })
+                    : 'Recent';
 
                   return (
                     <div
-                      key={p.id}
+                      key={p.id || Math.random()}
                       className="p-4 sm:p-5 hover:bg-surface-hover/40 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
                     >
                       <div className="flex items-center gap-4 min-w-0">
@@ -514,11 +531,11 @@ export default function AdminDashboardPage() {
                                 ? 'bg-pneumonia/10 text-pneumonia border-pneumonia/30'
                                 : 'bg-success/10 text-success border-success/30'
                             }`}>
-                              {p.predicted_class}
+                              {p.predicted_class || 'UNKNOWN'}
                             </span>
 
                             <span className="text-xs font-mono font-semibold text-foreground">
-                              {(p.confidence_score * 100 > 100 ? p.confidence_score : p.confidence_score * 100).toFixed(1)}% confidence
+                              {formattedConf}% confidence
                             </span>
 
                             {p.is_uncertain && (
@@ -531,7 +548,7 @@ export default function AdminDashboardPage() {
                             {p.patients ? (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
                                 <Users className="h-2.5 w-2.5" />
-                                {p.patients.patient_name}
+                                {p.patients.patient_name || 'Patient'}
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-surface text-muted border border-border">
@@ -541,14 +558,11 @@ export default function AdminDashboardPage() {
                           </div>
 
                           <div className="flex items-center gap-2 text-xs text-muted truncate">
-                            <span className="font-mono text-[11px]">ID: {p.id.slice(0, 8)}…</span>
-                            <span>·</span>
+                            {shortId && <span className="font-mono text-[11px]">ID: {shortId}</span>}
+                            {shortId && <span>·</span>}
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
-                              {new Date(p.created_at).toLocaleString('en-US', {
-                                month: 'short', day: 'numeric', year: 'numeric',
-                                hour: '2-digit', minute: '2-digit'
-                              })}
+                              {formattedDate}
                             </span>
                           </div>
 
