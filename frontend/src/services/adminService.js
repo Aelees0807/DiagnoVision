@@ -238,3 +238,61 @@ export async function checkSystemHealth() {
     };
   }
 }
+
+/**
+ * Fetch all hospital predictions across all patients for admin oversight.
+ */
+export async function fetchAdminPredictions({
+  page = 1,
+  limit = 20,
+  status = 'all',
+  classification = 'all',
+  uncertain = 'all',
+  search = '',
+} = {}) {
+  try {
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    let query = supabase
+      .from('medical_predictions')
+      .select(`
+        *,
+        patients (id, patient_name, patient_id),
+        staff_reviews (id, verdict, override_class, clinical_notes, created_at, reviewer_id)
+      `, { count: 'exact' })
+      .order('created_at', { ascending: false });
+
+    if (status !== 'all') {
+      query = query.eq('review_status', status);
+    }
+    if (classification !== 'all') {
+      query = query.eq('predicted_class', classification);
+    }
+    if (uncertain === 'yes') {
+      query = query.eq('is_uncertain', true);
+    } else if (uncertain === 'no') {
+      query = query.eq('is_uncertain', false);
+    }
+
+    const { data, error, count } = await query.range(from, to);
+    if (error) throw error;
+
+    let filtered = data || [];
+    if (search && search.trim()) {
+      const q = search.trim().toLowerCase();
+      filtered = filtered.filter(item =>
+        item.id.toLowerCase().includes(q) ||
+        item.predicted_class?.toLowerCase().includes(q) ||
+        item.patients?.patient_name?.toLowerCase().includes(q) ||
+        item.patients?.patient_id?.toLowerCase().includes(q)
+      );
+    }
+
+    return { data: filtered, error: null, count: count || 0, hasMore: (count || 0) > to + 1 };
+  } catch (err) {
+    console.error('[adminService] fetchAdminPredictions error:', err);
+    return { data: [], error: err.message || 'Failed to fetch predictions', count: 0, hasMore: false };
+  }
+}
+

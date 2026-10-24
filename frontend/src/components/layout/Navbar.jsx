@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { Menu, X, Activity, LogIn, UserPlus, ChevronDown, User, History, LogOut, Shield, Stethoscope } from 'lucide-react';
+import { Menu, X, Activity, LogIn, UserPlus, ChevronDown, User, History, LogOut, Shield, Stethoscope, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NAV_LINKS } from '@/constants';
 import { useAuth } from '@/contexts/AuthContext';
@@ -58,6 +58,24 @@ export default function Navbar() {
     ? profile.full_name.split(' ')[0]
     : 'User';
 
+  // Role-aware navigation links
+  const navLinks = isAdmin
+    ? [
+        { to: '/admin', label: 'Admin Console' },
+        { to: '/staff/scans?scope=all', label: 'Hospital Scans' },
+        { to: '/staff', label: 'Staff View' },
+        { to: '/about', label: 'About' },
+      ]
+    : isMedicalStaff
+      ? [
+          { to: '/staff', label: 'Staff Dashboard' },
+          { to: '/staff/scans', label: 'Clinical Scans' },
+          { to: '/staff/patients', label: 'Patients' },
+          { to: '/predict', label: 'New Scan' },
+          { to: '/about', label: 'About' },
+        ]
+      : NAV_LINKS;
+
   return (
     <nav
       className={cn(
@@ -72,7 +90,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group" aria-label="DiagnoVision home">
+          <Link to={isAdmin ? '/admin' : isMedicalStaff ? '/staff' : '/'} className="flex items-center gap-2.5 group" aria-label="DiagnoVision home">
             <div className="relative">
               <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-info flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
                 <Activity className="h-5 w-5 text-white" strokeWidth={2.5} />
@@ -86,7 +104,7 @@ export default function Navbar() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-1">
-            {NAV_LINKS.map(({ to, label }) => (
+            {navLinks.map(({ to, label }) => (
               <NavLink
                 key={to}
                 to={to}
@@ -94,7 +112,7 @@ export default function Navbar() {
                   cn(
                     'relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200',
                     isActive
-                      ? 'text-primary bg-primary-light'
+                      ? 'text-primary bg-primary-light font-semibold'
                       : 'text-secondary hover:text-foreground hover:bg-surface-hover'
                   )
                 }
@@ -138,50 +156,112 @@ export default function Navbar() {
                         {/* User info */}
                         <div className="px-4 py-3 border-b border-border/50">
                           <p className="text-sm font-semibold text-foreground truncate">{profile?.full_name || 'User'}</p>
-                          <p className="text-xs text-muted truncate mt-0.5">{profile?.role === 'medical_staff' ? 'Medical Staff' : profile?.role === 'admin' ? 'Admin' : 'General User'}</p>
+                          <p className="text-xs text-muted truncate mt-0.5">
+                            {isAdmin ? 'Hospital Administrator' : isMedicalStaff ? 'Medical Staff' : 'General User'}
+                          </p>
                         </div>
 
                         {/* Links */}
                         <div className="py-1">
-                          <Link
-                            to="/history"
-                            onClick={() => setIsUserMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-secondary hover:text-foreground hover:bg-surface-hover transition-colors"
-                            role="menuitem"
-                          >
-                            <History className="h-4 w-4" />
-                            History
-                          </Link>
-                          <Link
-                            to="/profile"
-                            onClick={() => setIsUserMenuOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-secondary hover:text-foreground hover:bg-surface-hover transition-colors"
-                            role="menuitem"
-                          >
-                            <User className="h-4 w-4" />
-                            Profile
-                          </Link>
-                          {(isMedicalStaff || isAdmin) && (
-                            <Link
-                              to="/staff"
-                              onClick={() => setIsUserMenuOpen(false)}
-                              className="flex items-center gap-3 px-4 py-2.5 text-sm text-secondary hover:text-foreground hover:bg-surface-hover transition-colors"
-                              role="menuitem"
-                            >
-                              <Stethoscope className="h-4 w-4" />
-                              Staff Dashboard
-                            </Link>
-                          )}
-                          {isAdmin && (
-                            <Link
-                              to="/admin"
-                              onClick={() => setIsUserMenuOpen(false)}
-                              className="flex items-center gap-3 px-4 py-2.5 text-sm text-secondary hover:text-foreground hover:bg-surface-hover transition-colors"
-                              role="menuitem"
-                            >
-                              <Shield className="h-4 w-4 text-indigo-600" />
-                              Admin Console
-                            </Link>
+                          {isAdmin ? (
+                            <>
+                              <Link
+                                to="/admin"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground font-medium hover:bg-surface-hover transition-colors"
+                                role="menuitem"
+                              >
+                                <Shield className="h-4 w-4 text-indigo-600" />
+                                Admin Console
+                              </Link>
+                              <Link
+                                to="/staff/scans?scope=all"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-secondary hover:text-foreground hover:bg-surface-hover transition-colors"
+                                role="menuitem"
+                              >
+                                <Activity className="h-4 w-4 text-info" />
+                                All Hospital Scans
+                              </Link>
+                              <Link
+                                to="/staff"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-secondary hover:text-foreground hover:bg-surface-hover transition-colors"
+                                role="menuitem"
+                              >
+                                <Stethoscope className="h-4 w-4 text-primary" />
+                                Staff View
+                              </Link>
+                              <Link
+                                to="/profile"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-secondary hover:text-foreground hover:bg-surface-hover transition-colors"
+                                role="menuitem"
+                              >
+                                <User className="h-4 w-4" />
+                                Profile
+                              </Link>
+                            </>
+                          ) : isMedicalStaff ? (
+                            <>
+                              <Link
+                                to="/staff"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-foreground font-medium hover:bg-surface-hover transition-colors"
+                                role="menuitem"
+                              >
+                                <Stethoscope className="h-4 w-4 text-primary" />
+                                Staff Dashboard
+                              </Link>
+                              <Link
+                                to="/staff/scans"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-secondary hover:text-foreground hover:bg-surface-hover transition-colors"
+                                role="menuitem"
+                              >
+                                <Activity className="h-4 w-4 text-info" />
+                                Clinical Scans
+                              </Link>
+                              <Link
+                                to="/staff/patients"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-secondary hover:text-foreground hover:bg-surface-hover transition-colors"
+                                role="menuitem"
+                              >
+                                <Users className="h-4 w-4 text-primary" />
+                                My Patients
+                              </Link>
+                              <Link
+                                to="/profile"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-secondary hover:text-foreground hover:bg-surface-hover transition-colors"
+                                role="menuitem"
+                              >
+                                <User className="h-4 w-4" />
+                                Profile
+                              </Link>
+                            </>
+                          ) : (
+                            <>
+                              <Link
+                                to="/history"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-secondary hover:text-foreground hover:bg-surface-hover transition-colors"
+                                role="menuitem"
+                              >
+                                <History className="h-4 w-4" />
+                                History
+                              </Link>
+                              <Link
+                                to="/profile"
+                                onClick={() => setIsUserMenuOpen(false)}
+                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-secondary hover:text-foreground hover:bg-surface-hover transition-colors"
+                                role="menuitem"
+                              >
+                                <User className="h-4 w-4" />
+                                Profile
+                              </Link>
+                            </>
                           )}
                         </div>
 
@@ -243,7 +323,7 @@ export default function Navbar() {
         )}
       >
         <div className="glass-strong border-t border-border/50 px-4 py-3 space-y-1">
-          {NAV_LINKS.map(({ to, label }) => (
+          {navLinks.map(({ to, label }) => (
             <NavLink
               key={to}
               to={to}
@@ -252,7 +332,7 @@ export default function Navbar() {
                 cn(
                   'block px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200',
                   isActive
-                    ? 'text-primary bg-primary-light'
+                    ? 'text-primary bg-primary-light font-semibold'
                     : 'text-secondary hover:text-foreground hover:bg-surface-hover'
                 )
               }
@@ -271,44 +351,100 @@ export default function Navbar() {
                   {/* User info */}
                   <div className="px-4 py-2">
                     <p className="text-sm font-semibold text-foreground">{profile?.full_name || 'User'}</p>
-                    <p className="text-xs text-muted">{profile?.role === 'medical_staff' ? 'Medical Staff' : profile?.role === 'admin' ? 'Admin' : 'General User'}</p>
+                    <p className="text-xs text-muted">
+                      {isAdmin ? 'Hospital Administrator' : isMedicalStaff ? 'Medical Staff' : 'General User'}
+                    </p>
                   </div>
 
-                  <Link
-                    to="/history"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-secondary hover:text-foreground hover:bg-surface-hover transition-all duration-200"
-                  >
-                    <History className="h-4 w-4" />
-                    History
-                  </Link>
-                  <Link
-                    to="/profile"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-secondary hover:text-foreground hover:bg-surface-hover transition-all duration-200"
-                  >
-                    <User className="h-4 w-4" />
-                    Profile
-                  </Link>
-                  {(isMedicalStaff || isAdmin) && (
-                    <Link
-                      to="/staff"
-                      onClick={() => setIsMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-secondary hover:text-foreground hover:bg-surface-hover transition-all duration-200"
-                    >
-                      <Stethoscope className="h-4 w-4" />
-                      Staff Dashboard
-                    </Link>
-                  )}
-                  {isAdmin && (
-                    <Link
-                      to="/admin"
-                      onClick={() => setIsMenuOpen(false)}
-                      className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-secondary hover:text-foreground hover:bg-surface-hover transition-all duration-200"
-                    >
-                      <Shield className="h-4 w-4 text-indigo-600" />
-                      Admin Console
-                    </Link>
+                  {isAdmin ? (
+                    <>
+                      <Link
+                        to="/admin"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-foreground hover:bg-surface-hover transition-all duration-200"
+                      >
+                        <Shield className="h-4 w-4 text-indigo-600" />
+                        Admin Console
+                      </Link>
+                      <Link
+                        to="/staff/scans?scope=all"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-secondary hover:text-foreground hover:bg-surface-hover transition-all duration-200"
+                      >
+                        <Activity className="h-4 w-4 text-info" />
+                        All Hospital Scans
+                      </Link>
+                      <Link
+                        to="/staff"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-secondary hover:text-foreground hover:bg-surface-hover transition-all duration-200"
+                      >
+                        <Stethoscope className="h-4 w-4 text-primary" />
+                        Staff View
+                      </Link>
+                      <Link
+                        to="/profile"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-secondary hover:text-foreground hover:bg-surface-hover transition-all duration-200"
+                      >
+                        <User className="h-4 w-4" />
+                        Profile
+                      </Link>
+                    </>
+                  ) : isMedicalStaff ? (
+                    <>
+                      <Link
+                        to="/staff"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-foreground hover:bg-surface-hover transition-all duration-200"
+                      >
+                        <Stethoscope className="h-4 w-4 text-primary" />
+                        Staff Dashboard
+                      </Link>
+                      <Link
+                        to="/staff/scans"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-secondary hover:text-foreground hover:bg-surface-hover transition-all duration-200"
+                      >
+                        <Activity className="h-4 w-4 text-info" />
+                        Clinical Scans
+                      </Link>
+                      <Link
+                        to="/staff/patients"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-secondary hover:text-foreground hover:bg-surface-hover transition-all duration-200"
+                      >
+                        <Users className="h-4 w-4 text-primary" />
+                        My Patients
+                      </Link>
+                      <Link
+                        to="/profile"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-secondary hover:text-foreground hover:bg-surface-hover transition-all duration-200"
+                      >
+                        <User className="h-4 w-4" />
+                        Profile
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <Link
+                        to="/history"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-secondary hover:text-foreground hover:bg-surface-hover transition-all duration-200"
+                      >
+                        <History className="h-4 w-4" />
+                        History
+                      </Link>
+                      <Link
+                        to="/profile"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-secondary hover:text-foreground hover:bg-surface-hover transition-all duration-200"
+                      >
+                        <User className="h-4 w-4" />
+                        Profile
+                      </Link>
+                    </>
                   )}
                   <button
                     onClick={handleSignOut}

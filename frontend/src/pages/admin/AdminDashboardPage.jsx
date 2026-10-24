@@ -4,7 +4,8 @@ import {
   Shield, Users, Activity, FileText, CheckCircle2, AlertTriangle,
   RefreshCw, Search, Filter, UserCheck, UserX, Stethoscope,
   Cpu, Server, HardDrive, Clock, ArrowUpRight, BarChart3,
-  SlidersHorizontal, ShieldAlert, Award, ChevronRight, Zap
+  SlidersHorizontal, ShieldAlert, Award, ChevronRight, Zap,
+  Eye, Calendar, ChevronLeft, Inbox
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
@@ -12,25 +13,39 @@ import Container from '@/components/layout/Container';
 import PageHeader from '@/components/layout/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Spinner } from '@/components/ui/Spinner';
+import { supabase } from '@/lib/supabase';
 import {
   fetchAdminOverviewStats,
   fetchAdminUsers,
   updateUserRole,
   toggleUserStatus,
   fetchAdminAuditLogs,
-  checkSystemHealth
+  checkSystemHealth,
+  fetchAdminPredictions
 } from '@/services/adminService';
 
 export default function AdminDashboardPage() {
   useDocumentTitle('Hospital Admin Console');
   const { profile } = useAuth();
 
-  // Tab State: 'users' | 'analytics' | 'audits' | 'health'
-  const [activeTab, setActiveTab] = useState('users');
+  // Tab State: 'predictions' | 'users' | 'analytics' | 'audits' | 'health'
+  const [activeTab, setActiveTab] = useState('predictions');
 
   // Overview Stats
   const [stats, setStats] = useState(null);
   const [loadingStats, setLoadingStats] = useState(true);
+
+  // Predictions Tab State
+  const [predictions, setPredictions] = useState([]);
+  const [totalPredictions, setTotalPredictions] = useState(0);
+  const [predictionPage, setPredictionPage] = useState(1);
+  const [hasMorePredictions, setHasMorePredictions] = useState(false);
+  const [loadingPredictions, setLoadingPredictions] = useState(false);
+  const [predictionSearch, setPredictionSearch] = useState('');
+  const [predictionClass, setPredictionClass] = useState('all');
+  const [predictionStatus, setPredictionStatus] = useState('all');
+  const [predictionUncertain, setPredictionUncertain] = useState('all');
+  const [scanThumbnails, setScanThumbnails] = useState({});
 
   // Users Tab State
   const [users, setUsers] = useState([]);
@@ -50,6 +65,46 @@ export default function AdminDashboardPage() {
 
   // Action message feedback
   const [feedback, setFeedback] = useState(null); // { type: 'success' | 'error', text: string }
+
+  // ── Load Hospital Predictions ──
+  const loadPredictions = useCallback(async () => {
+    try {
+      setLoadingPredictions(true);
+      const { data, count, hasMore, error } = await fetchAdminPredictions({
+        page: predictionPage,
+        limit: 15,
+        search: predictionSearch.trim(),
+        classification: predictionClass,
+        status: predictionStatus,
+        uncertain: predictionUncertain,
+      });
+      if (error) throw new Error(error);
+      setPredictions(data || []);
+      setTotalPredictions(count || 0);
+      setHasMorePredictions(hasMore);
+
+      // Generate signed URLs for preview thumbnails
+      const paths = (data || []).map(p => p.image_path).filter(Boolean);
+      if (paths.length > 0) {
+        try {
+          const { data: urlData } = await supabase.storage.from('xrays').createSignedUrls(paths, 3600);
+          if (urlData) {
+            const map = {};
+            urlData.forEach((u, i) => {
+              if (u?.signedUrl) map[paths[i]] = u.signedUrl;
+            });
+            setScanThumbnails(prev => ({ ...prev, ...map }));
+          }
+        } catch {
+          // Non-blocking thumbnail signing
+        }
+      }
+    } catch (err) {
+      console.error('[AdminDashboard] Error loading predictions:', err);
+    } finally {
+      setLoadingPredictions(false);
+    }
+  }, [predictionPage, predictionSearch, predictionClass, predictionStatus, predictionUncertain]);
 
   // ── Load Overview Stats ──
   const loadStats = useCallback(async () => {
@@ -116,10 +171,11 @@ export default function AdminDashboardPage() {
   }, [loadStats, runHealthCheck]);
 
   useEffect(() => {
+    if (activeTab === 'predictions') loadPredictions();
     if (activeTab === 'users') loadUsers();
     if (activeTab === 'audits') loadAudits();
     if (activeTab === 'health') runHealthCheck();
-  }, [activeTab, loadUsers, loadAudits, runHealthCheck]);
+  }, [activeTab, loadPredictions, loadUsers, loadAudits, runHealthCheck]);
 
   // ── Handlers for User Governance ──
   const handleRoleChange = async (userId, newRole) => {
@@ -187,9 +243,10 @@ export default function AdminDashboardPage() {
             <Button
               variant="outline"
               size="sm"
-              icon={<RefreshCw className={`h-4 w-4 ${loadingStats ? 'animate-spin' : ''}`} />}
+              icon={<RefreshCw className={`h-4 w-4 ${loadingStats || loadingPredictions ? 'animate-spin' : ''}`} />}
               onClick={() => {
                 loadStats();
+                if (activeTab === 'predictions') loadPredictions();
                 if (activeTab === 'users') loadUsers();
                 if (activeTab === 'audits') loadAudits();
                 if (activeTab === 'health') runHealthCheck();
@@ -197,9 +254,9 @@ export default function AdminDashboardPage() {
             >
               Refresh Data
             </Button>
-            <Link to="/staff">
-              <Button variant="secondary" size="sm" icon={<Stethoscope className="h-4 w-4" />}>
-                Staff View
+            <Link to="/staff/scans?scope=all">
+              <Button variant="secondary" size="sm" icon={<Activity className="h-4 w-4 text-info" />}>
+                All Hospital Scans
               </Button>
             </Link>
           </div>
@@ -219,37 +276,51 @@ export default function AdminDashboardPage() {
       {/* ── Key Performance Metrics Bar ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <MetricCard
+          title="Total Hospital Scans"
+          value={loadingStats ? '—' : stats?.total_scans ?? 0}
+          subtitle={`${stats?.uncertain_scans ?? 0} flagged for clinical review`}
+          icon={<Activity className="h-5 w-5 text-info" />}
+          gradient="from-info/10 to-info/5 border-info/20 hover:border-info/40 cursor-pointer"
+          onClick={() => setActiveTab('predictions')}
+        />
+        <MetricCard
           title="Total Registered Users"
           value={loadingStats ? '—' : stats?.total_users ?? 0}
           subtitle={`${stats?.total_staff ?? 0} medical staff & admins`}
           icon={<Users className="h-5 w-5 text-indigo-600" />}
-          gradient="from-indigo-500/10 to-indigo-500/5 border-indigo-500/20"
+          gradient="from-indigo-500/10 to-indigo-500/5 border-indigo-500/20 hover:border-indigo-500/40 cursor-pointer"
+          onClick={() => setActiveTab('users')}
         />
         <MetricCard
           title="Clinical Medical Staff"
           value={loadingStats ? '—' : stats?.total_staff ?? 0}
           subtitle="Doctors & Radiologists with access"
           icon={<Stethoscope className="h-5 w-5 text-primary" />}
-          gradient="from-primary/10 to-primary/5 border-primary/20"
-        />
-        <MetricCard
-          title="Total Hospital Scans"
-          value={loadingStats ? '—' : stats?.total_scans ?? 0}
-          subtitle={`${stats?.uncertain_scans ?? 0} flagged for clinical review`}
-          icon={<Activity className="h-5 w-5 text-info" />}
-          gradient="from-info/10 to-info/5 border-info/20"
+          gradient="from-primary/10 to-primary/5 border-primary/20 hover:border-primary/40 cursor-pointer"
+          onClick={() => {
+            setActiveTab('users');
+            setRoleFilter('medical_staff');
+          }}
         />
         <MetricCard
           title="AI Concordance Rate"
           value={loadingStats ? '—' : `${stats?.concordance_rate ?? 100}%`}
           subtitle={`${stats?.confirmed_reviews ?? 0} confirmed · ${stats?.overridden_reviews ?? 0} overridden`}
           icon={<Award className="h-5 w-5 text-success" />}
-          gradient="from-success/10 to-success/5 border-success/20"
+          gradient="from-success/10 to-success/5 border-success/20 hover:border-success/40 cursor-pointer"
+          onClick={() => setActiveTab('analytics')}
         />
       </div>
 
       {/* ── Admin Navigation Tabs ── */}
       <div className="flex items-center gap-2 border-b border-border mb-6 overflow-x-auto pb-1 animate-fade-in-up">
+        <TabButton
+          active={activeTab === 'predictions'}
+          onClick={() => setActiveTab('predictions')}
+          icon={<Activity className="h-4 w-4" />}
+          label="Hospital Predictions & Scans"
+          count={stats?.total_scans ?? null}
+        />
         <TabButton
           active={activeTab === 'users'}
           onClick={() => setActiveTab('users')}
@@ -278,6 +349,279 @@ export default function AdminDashboardPage() {
           badgeColor={healthData?.online ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'}
         />
       </div>
+
+      {/* ══════════════════════════════════════════════════════════
+          TAB: HOSPITAL PREDICTIONS & SCANS
+          ══════════════════════════════════════════════════════════ */}
+      {activeTab === 'predictions' && (
+        <div className="space-y-4 animate-fade-in">
+          {/* Controls Bar */}
+          <div className="glass rounded-2xl p-4 border border-border/40 flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* Search */}
+            <div className="relative w-full md:w-80">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
+              <input
+                type="text"
+                placeholder="Search patient, ID, or scan UUID…"
+                value={predictionSearch}
+                onChange={e => {
+                  setPredictionSearch(e.target.value);
+                  setPredictionPage(1);
+                }}
+                className="w-full pl-10 pr-4 py-2 rounded-xl bg-surface border border-border text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              />
+            </div>
+
+            {/* Filter Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
+              {/* Classification filter */}
+              <div className="flex items-center rounded-xl bg-surface border border-border p-1 text-xs">
+                {['all', 'PNEUMONIA', 'NORMAL'].map(cls => (
+                  <button
+                    key={cls}
+                    onClick={() => {
+                      setPredictionClass(cls);
+                      setPredictionPage(1);
+                    }}
+                    className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
+                      predictionClass === cls
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'text-secondary hover:text-foreground'
+                    }`}
+                  >
+                    {cls === 'all' ? 'All Classes' : cls}
+                  </button>
+                ))}
+              </div>
+
+              {/* Status filter */}
+              <div className="flex items-center rounded-xl bg-surface border border-border p-1 text-xs">
+                {[
+                  { id: 'all', label: 'All Reviews' },
+                  { id: 'pending', label: 'Pending' },
+                  { id: 'reviewed', label: 'Reviewed' },
+                ].map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      setPredictionStatus(s.id);
+                      setPredictionPage(1);
+                    }}
+                    className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
+                      predictionStatus === s.id
+                        ? 'bg-indigo-600 text-white shadow-xs'
+                        : 'text-secondary hover:text-foreground'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Uncertainty filter */}
+              <button
+                onClick={() => {
+                  setPredictionUncertain(prev => prev === 'yes' ? 'all' : 'yes');
+                  setPredictionPage(1);
+                }}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                  predictionUncertain === 'yes'
+                    ? 'bg-warning/10 border-warning text-warning'
+                    : 'bg-surface border-border text-secondary hover:text-foreground'
+                }`}
+              >
+                <AlertTriangle className="h-3 w-3" />
+                Uncertain Only
+              </button>
+
+              <Link to="/staff/scans?scope=all">
+                <Button size="sm" variant="secondary" icon={<ArrowUpRight className="h-3.5 w-3.5" />}>
+                  Full Scan Studio
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          {/* Scans Table / List */}
+          <div className="glass rounded-2xl border border-border/40 overflow-hidden shadow-sm">
+            {loadingPredictions ? (
+              <div className="py-20 flex flex-col items-center justify-center">
+                <Spinner size="lg" className="text-indigo-600 mb-3" />
+                <p className="text-sm text-secondary">Loading hospital predictions & clinical scans…</p>
+              </div>
+            ) : predictions.length === 0 ? (
+              <div className="py-16 text-center">
+                <Activity className="h-12 w-12 text-muted mx-auto mb-3" />
+                <h4 className="text-base font-bold text-foreground">No hospital predictions found</h4>
+                <p className="text-xs text-muted mt-1 max-w-sm mx-auto">
+                  {predictionSearch || predictionClass !== 'all' || predictionStatus !== 'all' || predictionUncertain !== 'all'
+                    ? 'No predictions match the selected filters. Try clearing your search.'
+                    : 'Screening records will appear here as doctors and patients submit scans.'}
+                </p>
+                {(predictionSearch || predictionClass !== 'all' || predictionStatus !== 'all' || predictionUncertain !== 'all') && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => {
+                      setPredictionSearch('');
+                      setPredictionClass('all');
+                      setPredictionStatus('all');
+                      setPredictionUncertain('all');
+                      setPredictionPage(1);
+                    }}
+                  >
+                    Reset Filters
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="divide-y divide-border/40">
+                {predictions.map(p => {
+                  const isPneu = p.predicted_class === 'PNEUMONIA';
+                  const thumbUrl = scanThumbnails[p.image_path];
+                  const hasReview = p.staff_reviews && p.staff_reviews.length > 0;
+                  const latestReview = hasReview ? p.staff_reviews[0] : null;
+
+                  return (
+                    <div
+                      key={p.id}
+                      className="p-4 sm:p-5 hover:bg-surface-hover/40 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                    >
+                      <div className="flex items-center gap-4 min-w-0">
+                        {/* Thumbnail / Image Preview */}
+                        <div className="w-14 h-14 rounded-xl bg-slate-900 border border-border/60 overflow-hidden shrink-0 flex items-center justify-center relative shadow-sm">
+                          {thumbUrl ? (
+                            <img
+                              src={thumbUrl}
+                              alt="Scan Preview"
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <Activity className="h-6 w-6 text-slate-500" />
+                          )}
+                          {p.is_uncertain && (
+                            <div className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-warning ring-2 ring-slate-900" title="Flagged Uncertain" />
+                          )}
+                        </div>
+
+                        {/* Scan Details */}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold border ${
+                              isPneu
+                                ? 'bg-pneumonia/10 text-pneumonia border-pneumonia/30'
+                                : 'bg-success/10 text-success border-success/30'
+                            }`}>
+                              {p.predicted_class}
+                            </span>
+
+                            <span className="text-xs font-mono font-semibold text-foreground">
+                              {(p.confidence_score * 100 > 100 ? p.confidence_score : p.confidence_score * 100).toFixed(1)}% confidence
+                            </span>
+
+                            {p.is_uncertain && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-warning/10 text-warning border border-warning/30">
+                                <AlertTriangle className="h-2.5 w-2.5" />
+                                UNCERTAIN
+                              </span>
+                            )}
+
+                            {p.patients ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                <Users className="h-2.5 w-2.5" />
+                                {p.patients.patient_name}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-surface text-muted border border-border">
+                                Patient Direct Upload
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2 text-xs text-muted truncate">
+                            <span className="font-mono text-[11px]">ID: {p.id.slice(0, 8)}…</span>
+                            <span>·</span>
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {new Date(p.created_at).toLocaleString('en-US', {
+                                month: 'short', day: 'numeric', year: 'numeric',
+                                hour: '2-digit', minute: '2-digit'
+                              })}
+                            </span>
+                          </div>
+
+                          {/* Doctor review summary if present */}
+                          {latestReview && (
+                            <div className="mt-1.5 flex items-center gap-2 text-xs">
+                              {latestReview.verdict === 'confirmed' ? (
+                                <span className="inline-flex items-center gap-1 text-success font-semibold">
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  Doctor Confirmed
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-pneumonia font-semibold">
+                                  <RefreshCw className="h-3 w-3" />
+                                  Doctor Overridden → {latestReview.override_class}
+                                </span>
+                              )}
+                              {latestReview.clinical_notes && (
+                                <span className="text-secondary italic truncate max-w-xs">
+                                  "{latestReview.clinical_notes}"
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Action */}
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                        <Link to={`/staff/scans/${p.id}`}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            icon={<Eye className="h-3.5 w-3.5 text-indigo-600" />}
+                          >
+                            Inspect & Review
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Pagination */}
+            {!loadingPredictions && predictions.length > 0 && (
+              <div className="p-4 border-t border-border/40 flex items-center justify-between text-xs text-secondary">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={predictionPage <= 1}
+                  onClick={() => setPredictionPage(p => Math.max(1, p - 1))}
+                  icon={<ChevronLeft className="h-3.5 w-3.5" />}
+                >
+                  Previous
+                </Button>
+                <span>
+                  Page {predictionPage} · Total Scans: {totalPredictions}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={!hasMorePredictions}
+                  onClick={() => setPredictionPage(p => p + 1)}
+                >
+                  Next <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ══════════════════════════════════════════════════════════
           TAB 1: USER & STAFF GOVERNANCE
@@ -760,9 +1104,12 @@ export default function AdminDashboardPage() {
 
 // ── Helpers ──
 
-function MetricCard({ title, value, subtitle, icon, gradient }) {
+function MetricCard({ title, value, subtitle, icon, gradient, onClick }) {
   return (
-    <div className={`glass rounded-2xl p-5 border bg-gradient-to-br ${gradient} hover-lift transition-all duration-300`}>
+    <div
+      onClick={onClick}
+      className={`glass rounded-2xl p-5 border bg-gradient-to-br ${gradient} hover-lift transition-all duration-300 ${onClick ? 'cursor-pointer' : ''}`}
+    >
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-semibold text-secondary">{title}</span>
         <div className="p-2 rounded-xl bg-white/70 shadow-xs">{icon}</div>
