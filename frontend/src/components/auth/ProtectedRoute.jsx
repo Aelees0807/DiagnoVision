@@ -31,14 +31,14 @@ export function ProtectedRoute({ children }) {
  * Redirects non-admins to the home page.
  */
 export function AdminRoute({ children }) {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
+  const { isAuthenticated, isAdmin, loading, profileLoading } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  if (loading || (isAuthenticated && profileLoading)) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh]">
         <Spinner size="lg" className="text-primary mb-4" />
-        <p className="text-secondary font-medium animate-pulse">Loading…</p>
+        <p className="text-secondary font-medium animate-pulse">Verifying administrative access…</p>
       </div>
     );
   }

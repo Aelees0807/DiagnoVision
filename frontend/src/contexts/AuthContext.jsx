@@ -76,12 +76,14 @@ export function AuthProvider({ children }) {
 
         if (newSession?.user) {
           const profileData = await fetchProfile(newSession.user.id);
-          if (mounted) setProfile(profileData);
+          if (mounted) {
+            setProfile(profileData);
+            setLoading(false);
+          }
         } else {
           setProfile(null);
+          setLoading(false);
         }
-
-        if (loading) setLoading(false);
       }
     );
 
@@ -113,14 +115,25 @@ export function AuthProvider({ children }) {
 
   /**
    * Sign in with email + password.
+   * Fetches profile before resolving to avoid route-guard race conditions.
    */
   const signIn = useCallback(async ({ email, password }) => {
+    setLoading(true);
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    if (!error && data?.user) {
+      setSession(data.session);
+      setUser(data.user);
+      const profileData = await fetchProfile(data.user.id);
+      setProfile(profileData);
+      setLoading(false);
+      return { data, error: null, profile: profileData };
+    }
+    setLoading(false);
     return { data, error };
-  }, []);
+  }, [fetchProfile]);
 
   /**
    * Sign out and clear local state.
@@ -204,11 +217,14 @@ export function AuthProvider({ children }) {
     return { data, error };
   }, []);
 
+  const currentRole = profile?.role || user?.user_metadata?.role;
+
   const value = useMemo(() => ({
     session,
     user,
     profile,
     loading,
+    profileLoading: !!user && profile === null,
     signUp,
     signIn,
     signOut,
@@ -218,13 +234,14 @@ export function AuthProvider({ children }) {
     updateUserPassword,
     refreshProfile,
     isAuthenticated: !!session,
-    isAdmin: profile?.role === 'admin',
-    isMedicalStaff: profile?.role === 'medical_staff',
+    isAdmin: currentRole === 'admin',
+    isMedicalStaff: currentRole === 'medical_staff' || currentRole === 'admin',
   }), [
     session,
     user,
     profile,
     loading,
+    currentRole,
     signUp,
     signIn,
     signOut,

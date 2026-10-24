@@ -7,14 +7,14 @@ import { Spinner } from '@/components/ui/Spinner';
  * Redirects non-staff to the home page, unauthenticated users to /login.
  */
 export function MedicalStaffRoute({ children }) {
-  const { isAuthenticated, isMedicalStaff, isAdmin, loading } = useAuth();
+  const { isAuthenticated, isMedicalStaff, isAdmin, loading, profileLoading } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  if (loading || (isAuthenticated && profileLoading)) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh]">
         <Spinner size="lg" className="text-primary mb-4" />
-        <p className="text-secondary font-medium animate-pulse">Loading…</p>
+        <p className="text-secondary font-medium animate-pulse">Verifying clinical credentials…</p>
       </div>
     );
   }
