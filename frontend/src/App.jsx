@@ -27,8 +27,8 @@ const PatientManagementPage = lazy(() => import('./pages/staff/PatientManagement
 const ScanManagementPage = lazy(() => import('./pages/staff/ScanManagementPage.jsx'));
 const ScanDetailPage = lazy(() => import('./pages/staff/ScanDetailPage.jsx'));
 
-// Placeholder components for routes not yet implemented but linked in Navbar
-const AdminPlaceholder = () => <div className="flex-1 flex items-center justify-center p-8 text-secondary">Admin Dashboard (Coming Soon)</div>;
+// Admin pages
+const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage.jsx'));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -93,7 +93,7 @@ export default function App() {
                 <Route path="/staff/scans" element={<MedicalStaffRoute><ScanManagementPage /></MedicalStaffRoute>} />
                 <Route path="/staff/scans/:id" element={<MedicalStaffRoute><ScanDetailPage /></MedicalStaffRoute>} />
 
-                <Route path="/admin" element={<AdminRoute><AdminPlaceholder /></AdminRoute>} />
+                <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
 
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
