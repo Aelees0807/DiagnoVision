@@ -1,6 +1,6 @@
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { Scan, XCircle, RotateCcw, Clock } from 'lucide-react';
+import { Scan, XCircle, RotateCcw, Clock, Info, Save, AlertCircle, CheckCircle, Stethoscope } from 'lucide-react';
 import Container from '@/components/layout/Container';
 import { Button } from '@/components/ui/Button';
 import GatekeeperStatus from '@/components/prediction/GatekeeperStatus';
@@ -10,6 +10,10 @@ import MedicalDisclaimer from '@/components/prediction/MedicalDisclaimer';
 import { formatDuration } from '@/utils/formatting';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useClientGradCAM } from '@/hooks/useClientGradCAM';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { compressImage } from '@/utils/imageUtils';
+import ShareWithDoctorModal from '@/components/sharing/ShareWithDoctorModal';
 
 /**
  * Result page — displays prediction result, confidence, Grad-CAM, disclaimer.
@@ -23,6 +27,12 @@ export default function ResultPage() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isRevealed, setIsRevealed] = useState(false);
+  const { isAuthenticated, loading, user } = useAuth();
+  
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState(null); // { type: 'success' | 'error', message: string }
+  const [savedPrediction, setSavedPrediction] = useState(null);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const { result, previewUrl, fileName } = location.state || {};
 
@@ -71,6 +81,68 @@ export default function ResultPage() {
     }
   }, [result, previewUrl, isPneumonia, isModelReady, gradcamStatus, generateGradCAM]);
 
+  /* ── Handle Save Result ── */
+  const handleSaveResult = async () => {
+    if (!user || !previewUrl) return;
+    setIsSaving(true);
+    setSaveStatus(null);
+    
+    try {
+      // 1. Fetch the original image blob from the object URL
+      const origRes = await fetch(previewUrl);
+      const origBlob = await origRes.blob();
+      
+      // 2. Compress the original image
+      const compressedXray = await compressImage(origBlob, 1024, 0.85);
+      
+      const timestamp = Date.now();
+      const xrayPath = `${user.id}/${timestamp}-xray.jpg`;
+      const heatmapPath = `${user.id}/${timestamp}-heatmap.png`;
+      
+      // 3. Upload X-ray
+      const { error: uploadError } = await supabase.storage
+        .from('xrays')
+        .upload(xrayPath, compressedXray, { contentType: 'image/jpeg' });
+        
+      if (uploadError) throw uploadError;
+
+      let finalHeatmapPath = null;
+      
+      // 4. Upload Heatmap if available
+      const gradcamDataUrlToUse = hasBackendGradcam ? `data:image/jpeg;base64,${gradcamImage}` : gradcamDataUrl;
+      if (gradcamDataUrlToUse) {
+        const heatRes = await fetch(gradcamDataUrlToUse);
+        const heatBlob = await heatRes.blob();
+        
+        const { error: heatError } = await supabase.storage
+          .from('xrays')
+          .upload(heatmapPath, heatBlob, { contentType: heatBlob.type || 'image/png' });
+          
+        if (!heatError) finalHeatmapPath = heatmapPath;
+      }
+      
+      // 5. Insert DB row
+      const { data: insertedData, error: dbError } = await supabase.from('medical_predictions').insert({
+        user_id: user.id,
+        image_path: xrayPath,
+        heatmap_path: finalHeatmapPath,
+        predicted_class: result.prediction.classification,
+        confidence_score: result.prediction.confidence,
+        is_uncertain: result.prediction.confidence < 70
+      }).select().single();
+      
+      if (dbError) throw dbError;
+      
+      setSavedPrediction(insertedData);
+      setSaveStatus({ type: 'success', message: 'Result saved to your history successfully!' });
+    } catch (err) {
+      console.error('Save result error:', err);
+      setSaveStatus({ type: 'error', message: err.message || 'Failed to save result. Please try again.' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (!result) return null;
 
   const isRejected = result.status === 'rejected';
@@ -79,7 +151,6 @@ export default function ResultPage() {
   const gradcam = result.gradcam;
 
   /* ── Resolve Grad-CAM source: prefer backend, fall back to client-side ── */
-  /* Only provide Grad-CAM data when prediction is PNEUMONIA */
   const hasBackendGradcam = isPneumonia && gradcam?.available && gradcam?.image_base64;
   const hasClientGradcam = isPneumonia && !!clientGradcamUrl;
   const gradcamImage = hasBackendGradcam
@@ -237,6 +308,54 @@ export default function ResultPage() {
               )}
             </div>
           </div>
+          
+          {/* ── Save Status Alert ── */}
+          {saveStatus && (
+            <div
+              className={isRevealed ? 'mb-6 flex justify-center animate-result-card-enter stagger-4' : 'mb-6 flex justify-center'}
+              style={{ opacity: 0 }}
+            >
+              <div className={`inline-flex items-center gap-3 px-4 py-3 rounded-xl border text-sm max-w-lg w-full ${
+                saveStatus.type === 'error' ? 'bg-error-bg border-error-light text-error' : 'bg-success-bg border-success-light text-success'
+              }`}>
+                {saveStatus.type === 'error' ? (
+                  <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                ) : (
+                  <CheckCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                )}
+                <p>{saveStatus.message}</p>
+                {saveStatus.type === 'success' && (
+                  <div className="ml-auto flex items-center gap-3">
+                    <button
+                      onClick={() => setIsShareModalOpen(true)}
+                      className="text-xs font-bold underline hover:no-underline text-success flex items-center gap-1 cursor-pointer"
+                    >
+                      <Stethoscope className="h-3.5 w-3.5" />
+                      Share with Doctor
+                    </button>
+                    <Link to="/history" className="text-xs font-bold underline hover:no-underline">
+                      View History
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── Guest Mode Note ── */}
+          {!loading && !isAuthenticated && (
+            <div
+              className={isRevealed ? 'mb-8 flex justify-center animate-result-card-enter stagger-4' : 'mb-8 flex justify-center'}
+              style={{ opacity: 0 }}
+            >
+              <div className="inline-flex items-center gap-3 px-4 py-3 rounded-xl bg-info-bg border border-info-light text-sm text-info">
+                <Info className="h-4 w-4 shrink-0" />
+                <p>
+                  <Link to="/login" className="font-semibold hover:underline">Sign in</Link> to save this result, view history and download a report.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* ── Medical Disclaimer ── */}
           <div
@@ -248,11 +367,30 @@ export default function ResultPage() {
 
           {/* ── Action Buttons ── */}
           <div
-            className={isRevealed ? 'flex justify-center gap-4 mb-8 animate-result-card-enter stagger-6' : 'flex justify-center gap-4 mb-8'}
+            className={isRevealed ? 'flex flex-wrap justify-center gap-4 mb-8 animate-result-card-enter stagger-6' : 'flex flex-wrap justify-center gap-4 mb-8'}
             style={{ opacity: 0 }}
           >
+            {isAuthenticated && !saveStatus?.type && (
+              <Button
+                icon={<Save className="h-4 w-4" />}
+                onClick={handleSaveResult}
+                isLoading={isSaving}
+              >
+                Save Result
+              </Button>
+            )}
+            {savedPrediction && (
+              <Button
+                variant="outline"
+                icon={<Stethoscope className="h-4 w-4 text-primary" />}
+                onClick={() => setIsShareModalOpen(true)}
+              >
+                Share with Doctor
+              </Button>
+            )}
             <Link to="/predict">
               <Button
+                variant={isAuthenticated && !saveStatus?.type ? 'outline' : 'primary'}
                 icon={<Scan className="h-4 w-4" />}
               >
                 Analyze Another Image
@@ -261,6 +399,13 @@ export default function ResultPage() {
           </div>
         </div>
       )}
+
+      {/* Share with Doctor Modal */}
+      <ShareWithDoctorModal
+        prediction={savedPrediction}
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+      />
     </Container>
   );
 }
