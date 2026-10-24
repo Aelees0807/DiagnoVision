@@ -3,7 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import {
   FileSearch, Search, Filter, X, ChevronRight, ChevronLeft,
   AlertTriangle, Shield, Clock, CheckCircle, RefreshCw,
-  Calendar, SlidersHorizontal, Users, ShieldCheck, Link2
+  Calendar, SlidersHorizontal, Users, ShieldCheck, Link2, Inbox
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
@@ -423,7 +423,7 @@ function ScanRow({ prediction, index, scope }) {
             {prediction.predicted_class}
           </span>
           <span className="text-xs text-muted font-mono">
-            {prediction.confidence_score.toFixed(1)}%
+            {Number(prediction.confidence_score || 0).toFixed(1)}%
           </span>
 
           {prediction.is_uncertain && (

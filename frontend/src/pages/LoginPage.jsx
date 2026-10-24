@@ -5,16 +5,16 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import Container from '@/components/layout/Container';
 import { Button } from '@/components/ui/Button';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 /**
  * Login page — email + password sign-in.
  * Uses the app's existing Tailwind patterns and glass-panel styling.
- * Redirects to the return path (from ProtectedRoute) or / after login.
+ * Redirects admins to /admin, staff to /staff, and users to return path or /.
  */
 export default function LoginPage() {
   useDocumentTitle('Sign In');
-  const { signIn, isAuthenticated } = useAuth();
+  const { signIn, isAuthenticated, isAdmin, isMedicalStaff } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -29,9 +29,10 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // If already logged in, redirect
+  // If already logged in, redirect role-appropriately
   if (isAuthenticated) {
-    navigate(from, { replace: true });
+    const dest = from !== '/' ? from : isAdmin ? '/admin' : isMedicalStaff ? '/staff' : '/';
+    navigate(dest, { replace: true });
     return null;
   }
 
@@ -59,7 +60,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const { error: signInError } = await signIn({ email: email.trim(), password });
+      const { data, error: signInError } = await signIn({ email: email.trim(), password });
 
       if (signInError) {
         // Supabase returns various error messages; map common ones
@@ -79,7 +80,27 @@ export default function LoginPage() {
           setError(signInError.message || 'An error occurred during sign in.');
         }
       } else {
-        navigate(from, { replace: true });
+        let targetPath = from;
+        if (from === '/' || from === '/login' || from === '/register') {
+          if (data?.user?.id) {
+            try {
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', data.user.id)
+                .single();
+
+              if (profileData?.role === 'admin') {
+                targetPath = '/admin';
+              } else if (profileData?.role === 'medical_staff') {
+                targetPath = '/staff';
+              }
+            } catch {
+              // fallback to from
+            }
+          }
+        }
+        navigate(targetPath, { replace: true });
       }
     } catch (err) {
       if (err?.message?.includes('Failed to fetch')) {

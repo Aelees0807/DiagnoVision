@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { History, Search, Trash2, AlertTriangle, X, ChevronRight, Download, Scan, Stethoscope } from 'lucide-react';
+import { History, Search, Trash2, AlertTriangle, X, ChevronRight, Download, Scan, Stethoscope, Shield, Activity } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
@@ -13,7 +13,7 @@ const ITEMS_PER_PAGE = 10;
 
 export default function HistoryPage() {
   useDocumentTitle('Screening History');
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   
   const [predictions, setPredictions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -155,6 +155,35 @@ export default function HistoryPage() {
 
   return (
     <Container size="lg">
+      {/* Admin Notice Banner */}
+      {isAdmin && (
+        <div className="mb-6 p-4 rounded-2xl bg-indigo-50/80 border border-indigo-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-fade-in-up">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm shadow-indigo-600/30">
+              <Shield className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-indigo-950">Hospital Administrator Account</h3>
+              <p className="text-xs text-indigo-700 mt-0.5">
+                Administrators oversee hospital-wide predictions and clinical reviews from the Admin Console.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link to="/admin">
+              <Button size="sm" variant="primary" icon={<Shield className="h-4 w-4" />}>
+                Admin Console
+              </Button>
+            </Link>
+            <Link to="/staff/scans?scope=all">
+              <Button size="sm" variant="outline" icon={<Activity className="h-4 w-4 text-info" />}>
+                All Hospital Scans
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
+
       <PageHeader
         title="Screening History"
         description="View and manage your past AI-assisted chest X-ray screening results."
@@ -170,16 +199,40 @@ export default function HistoryPage() {
       {/* ── Main List ── */}
       <div className="bg-white/50 backdrop-blur-md rounded-2xl border border-border shadow-sm overflow-hidden mb-8 animate-fade-in-up">
         {predictions.length === 0 && !loading && !error ? (
-          <div className="p-12 text-center flex flex-col items-center">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <History className="h-8 w-8 text-primary" />
+          isAdmin ? (
+            <div className="p-12 text-center flex flex-col items-center max-w-md mx-auto">
+              <div className="w-16 h-16 rounded-2xl bg-indigo-100/80 border border-indigo-200 text-indigo-600 flex items-center justify-center mb-4">
+                <Shield className="h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground mb-2">Hospital Admin Mode</h3>
+              <p className="text-secondary text-sm mb-6 leading-relaxed">
+                Your personal screening history is empty because admin accounts manage system-wide hospital records, medical staff governance, and clinical predictions.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center gap-3 w-full justify-center">
+                <Link to="/admin" className="w-full sm:w-auto">
+                  <Button className="w-full justify-center" icon={<Shield className="h-4 w-4" />}>
+                    Open Admin Console
+                  </Button>
+                </Link>
+                <Link to="/staff/scans?scope=all" className="w-full sm:w-auto">
+                  <Button variant="outline" className="w-full justify-center" icon={<Activity className="h-4 w-4 text-info" />}>
+                    View All Hospital Scans
+                  </Button>
+                </Link>
+              </div>
             </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">No history yet</h3>
-            <p className="text-secondary mb-6">Your saved screening results will appear here.</p>
-            <Link to="/predict">
-              <Button icon={<Scan className="h-4 w-4" />}>Analyze an X-Ray</Button>
-            </Link>
-          </div>
+          ) : (
+            <div className="p-12 text-center flex flex-col items-center">
+              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                <History className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">No history yet</h3>
+              <p className="text-secondary mb-6">Your saved screening results will appear here.</p>
+              <Link to="/predict">
+                <Button icon={<Scan className="h-4 w-4" />}>Analyze an X-Ray</Button>
+              </Link>
+            </div>
+          )
         ) : (
           <div className="divide-y divide-border/60">
             {predictions.map((item, index) => {
