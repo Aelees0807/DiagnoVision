@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import Container from '@/components/layout/Container';
 import { Button } from '@/components/ui/Button';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 /**
  * Login page — email + password sign-in.
@@ -48,6 +49,13 @@ export default function LoginPage() {
       return;
     }
 
+    if (!isSupabaseConfigured) {
+      setError(
+        'Deployment Error: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are missing in your deployment platform settings. Please add them to your environment variables and redeploy.'
+      );
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -59,14 +67,28 @@ export default function LoginPage() {
           setError('Invalid email or password. Please try again.');
         } else if (signInError.message?.includes('Email not confirmed')) {
           navigate(`/verify-email?email=${encodeURIComponent(email.trim())}`);
+        } else if (
+          signInError.message?.includes('Failed to fetch') ||
+          signInError.message?.includes('NetworkError') ||
+          signInError.name === 'TypeError'
+        ) {
+          setError(
+            'Unable to connect to Supabase (Failed to fetch). Please ensure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are configured in your deployment environment variables.'
+          );
         } else {
           setError(signInError.message || 'An error occurred during sign in.');
         }
       } else {
         navigate(from, { replace: true });
       }
-    } catch {
-      setError('An unexpected error occurred. Please try again.');
+    } catch (err) {
+      if (err?.message?.includes('Failed to fetch')) {
+        setError(
+          'Unable to connect to Supabase (Failed to fetch). Please verify your live deployment has VITE_SUPABASE_URL set.'
+        );
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
