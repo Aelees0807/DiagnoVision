@@ -254,11 +254,6 @@ export default function AdminDashboardPage() {
             >
               Refresh Data
             </Button>
-            <Link to="/staff/scans?scope=all">
-              <Button variant="secondary" size="sm" icon={<Activity className="h-4 w-4 text-info" />}>
-                All Hospital Scans
-              </Button>
-            </Link>
           </div>
         </div>
 
@@ -286,7 +281,7 @@ export default function AdminDashboardPage() {
         <MetricCard
           title="Total Registered Users"
           value={loadingStats ? '—' : stats?.total_users ?? 0}
-          subtitle={`${stats?.total_staff ?? 0} medical staff & admins`}
+          subtitle="Registered hospital accounts"
           icon={<Users className="h-5 w-5 text-indigo-600" />}
           gradient="from-indigo-500/10 to-indigo-500/5 border-indigo-500/20 hover:border-indigo-500/40 cursor-pointer"
           onClick={() => setActiveTab('users')}
@@ -433,12 +428,6 @@ export default function AdminDashboardPage() {
                 <AlertTriangle className="h-3 w-3" />
                 Uncertain Only
               </button>
-
-              <Link to="/staff/scans?scope=all">
-                <Button size="sm" variant="secondary" icon={<ArrowUpRight className="h-3.5 w-3.5" />}>
-                  Full Scan Studio
-                </Button>
-              </Link>
             </div>
           </div>
 

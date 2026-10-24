@@ -62,8 +62,6 @@ export default function Navbar() {
   const navLinks = isAdmin
     ? [
         { to: '/admin', label: 'Admin Console' },
-        { to: '/staff/scans?scope=all', label: 'Hospital Scans' },
-        { to: '/staff', label: 'Staff View' },
         { to: '/about', label: 'About' },
       ]
     : isMedicalStaff
@@ -173,24 +171,6 @@ export default function Navbar() {
                               >
                                 <Shield className="h-4 w-4 text-indigo-600" />
                                 Admin Console
-                              </Link>
-                              <Link
-                                to="/staff/scans?scope=all"
-                                onClick={() => setIsUserMenuOpen(false)}
-                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-secondary hover:text-foreground hover:bg-surface-hover transition-colors"
-                                role="menuitem"
-                              >
-                                <Activity className="h-4 w-4 text-info" />
-                                All Hospital Scans
-                              </Link>
-                              <Link
-                                to="/staff"
-                                onClick={() => setIsUserMenuOpen(false)}
-                                className="flex items-center gap-3 px-4 py-2.5 text-sm text-secondary hover:text-foreground hover:bg-surface-hover transition-colors"
-                                role="menuitem"
-                              >
-                                <Stethoscope className="h-4 w-4 text-primary" />
-                                Staff View
                               </Link>
                               <Link
                                 to="/profile"
@@ -365,22 +345,6 @@ export default function Navbar() {
                       >
                         <Shield className="h-4 w-4 text-indigo-600" />
                         Admin Console
-                      </Link>
-                      <Link
-                        to="/staff/scans?scope=all"
-                        onClick={() => setIsMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-secondary hover:text-foreground hover:bg-surface-hover transition-all duration-200"
-                      >
-                        <Activity className="h-4 w-4 text-info" />
-                        All Hospital Scans
-                      </Link>
-                      <Link
-                        to="/staff"
-                        onClick={() => setIsMenuOpen(false)}
-                        className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-secondary hover:text-foreground hover:bg-surface-hover transition-all duration-200"
-                      >
-                        <Stethoscope className="h-4 w-4 text-primary" />
-                        Staff View
                       </Link>
                       <Link
                         to="/profile"

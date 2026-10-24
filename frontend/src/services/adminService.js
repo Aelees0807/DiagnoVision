@@ -14,15 +14,10 @@ const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://
  */
 export async function fetchAdminOverviewStats() {
   try {
-    const { data, error } = await supabase.rpc('admin_get_overview_stats');
-    if (!error && data?.success) {
-      return { data, error: null };
-    }
-
-    // Fallback if RPC migration not yet executed
-    const [usersRes, staffRes, scansRes, reviewsRes, uncertainRes, normalRes, pneumoniaRes] = await Promise.all([
+    // Query metrics directly from tables for accurate real-time hospital statistics
+    const [staffRes, usersRes, scansRes, reviewsRes, uncertainRes, normalRes, pneumoniaRes] = await Promise.all([
+      supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'medical_staff'),
       supabase.from('profiles').select('id', { count: 'exact', head: true }),
-      supabase.from('profiles').select('id', { count: 'exact', head: true }).in('role', ['medical_staff', 'admin']),
       supabase.from('medical_predictions').select('id', { count: 'exact', head: true }),
       supabase.from('staff_reviews').select('verdict'),
       supabase.from('medical_predictions').select('id', { count: 'exact', head: true }).eq('is_uncertain', true),

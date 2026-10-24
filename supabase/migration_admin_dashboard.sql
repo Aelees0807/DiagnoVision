@@ -83,7 +83,7 @@ begin
   end if;
 
   select count(*) into v_total_users from public.profiles;
-  select count(*) into v_total_staff from public.profiles where role in ('medical_staff', 'admin');
+  select count(*) into v_total_staff from public.profiles where role = 'medical_staff';
   select count(*) into v_total_scans from public.medical_predictions;
   select count(*) into v_total_patients from public.patients;
   
