@@ -152,3 +152,41 @@ async def health():
             },
         }
     )
+
+# ── GET /api/me ────────────────────────────────────────────────
+from fastapi import Depends
+from .dependencies import get_current_user
+from .config import SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+import httpx
+
+@router.get("/me")
+async def me(current_user: dict = Depends(get_current_user)):
+    """Test endpoint to verify auth and return user role."""
+    user_id = current_user["id"]
+    role = "unknown"
+    
+    # Fetch role using service role key (like get_admin_user does)
+    if SUPABASE_SERVICE_ROLE_KEY:
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(
+                    f"{SUPABASE_URL}/rest/v1/profiles",
+                    params={"id": f"eq.{user_id}", "select": "role"},
+                    headers={
+                        "apikey": SUPABASE_SERVICE_ROLE_KEY,
+                        "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"
+                    },
+                    timeout=5.0
+                )
+                if response.status_code == 200:
+                    data = response.json()
+                    if data and len(data) > 0:
+                        role = data[0].get("role", "unknown")
+            except Exception:
+                pass
+
+    return {
+        "id": user_id,
+        "email": current_user.get("email"),
+        "role": role
+    }

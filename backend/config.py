@@ -3,7 +3,12 @@ DiagnoVision — Backend Configuration
 Centralized constants for model paths, preprocessing, and thresholds.
 """
 
+import os
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file if present
+load_dotenv()
 
 # ── Project Paths ──────────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -25,3 +30,8 @@ CONFIDENCE_THRESHOLD = 70.0  # percent
 # ── Server ────────────────────────────────────────────────────
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 MAX_FILE_SIZE_MB = 20
+
+# ── Supabase Auth ─────────────────────────────────────────────
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")

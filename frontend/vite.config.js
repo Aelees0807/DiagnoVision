@@ -34,8 +34,9 @@ export default defineConfig({
     open: true,
     headers: {
       // Required for SharedArrayBuffer (ONNX Runtime multi-threading)
+      // Using 'credentialless' allows embedding cross-origin assets (e.g. Supabase storage images)
       'Cross-Origin-Opener-Policy': 'same-origin',
-      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Cross-Origin-Embedder-Policy': 'credentialless',
     },
     proxy: {
       // Forward /api requests to the FastAPI backend
