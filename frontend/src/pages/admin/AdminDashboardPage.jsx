@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Shield, Users, Activity, FileText, CheckCircle2, AlertTriangle,
   RefreshCw, Search, Filter, UserCheck, UserX, Stethoscope,
   Cpu, Server, HardDrive, Clock, ArrowUpRight, BarChart3,
   SlidersHorizontal, ShieldAlert, Award, ChevronRight, Zap,
-  Eye, Calendar, ChevronLeft, Inbox
+  Eye, Calendar, ChevronLeft, Inbox, User, X, Upload,
+  ChevronDown, Check, Tag, Hash, Layers
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
@@ -24,9 +25,18 @@ import {
   fetchAdminPredictions
 } from '@/services/adminService';
 
+// Professional Google / Lucide Vector Icons for Search Scope (No childish emojis)
+const SEARCH_TARGET_OPTIONS = [
+  { id: 'all', label: 'All Fields', icon: Layers },
+  { id: 'patient_name', label: 'Patient Name', icon: User },
+  { id: 'uploader', label: 'Uploaded By', icon: Upload },
+  { id: 'patient_id', label: 'Hospital PID', icon: Tag },
+  { id: 'scan_id', label: 'Scan ID', icon: Hash },
+];
+
 export default function AdminDashboardPage() {
   useDocumentTitle('Hospital Admin Console');
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
 
   // Tab State: 'predictions' | 'users' | 'analytics' | 'audits' | 'health'
   const [activeTab, setActiveTab] = useState('predictions');
@@ -42,10 +52,29 @@ export default function AdminDashboardPage() {
   const [hasMorePredictions, setHasMorePredictions] = useState(false);
   const [loadingPredictions, setLoadingPredictions] = useState(false);
   const [predictionSearch, setPredictionSearch] = useState('');
+  const [searchTarget, setSearchTarget] = useState('all');
+  const [targetDropdownOpen, setTargetDropdownOpen] = useState(false);
+  const targetDropdownRef = useRef(null);
   const [predictionClass, setPredictionClass] = useState('all');
   const [predictionStatus, setPredictionStatus] = useState('all');
   const [predictionUncertain, setPredictionUncertain] = useState('all');
+  const [onlyMyUploads, setOnlyMyUploads] = useState(false);
   const [scanThumbnails, setScanThumbnails] = useState({});
+
+  // Close search target dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (targetDropdownRef.current && !targetDropdownRef.current.contains(event.target)) {
+        setTargetDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const activeTargetOption = SEARCH_TARGET_OPTIONS.find(opt => opt.id === searchTarget) || SEARCH_TARGET_OPTIONS[0];
+  const ActiveTargetIcon = activeTargetOption.icon;
+  const isAllActive = predictionClass === 'all' && predictionStatus === 'all' && predictionUncertain === 'all' && !onlyMyUploads;
 
   // Users Tab State
   const [users, setUsers] = useState([]);
@@ -74,9 +103,12 @@ export default function AdminDashboardPage() {
         page: predictionPage,
         limit: 15,
         search: predictionSearch.trim(),
+        searchTarget,
         classification: predictionClass,
         status: predictionStatus,
         uncertain: predictionUncertain,
+        onlyMyUploads,
+        currentUserId: user?.id,
       });
       if (error) throw new Error(error);
       setPredictions(data || []);
@@ -104,7 +136,7 @@ export default function AdminDashboardPage() {
     } finally {
       setLoadingPredictions(false);
     }
-  }, [predictionPage, predictionSearch, predictionClass, predictionStatus, predictionUncertain]);
+  }, [predictionPage, predictionSearch, searchTarget, predictionClass, predictionStatus, predictionUncertain, onlyMyUploads, user?.id]);
 
   // ── Load Overview Stats ──
   const loadStats = useCallback(async () => {
@@ -179,13 +211,23 @@ export default function AdminDashboardPage() {
 
   // ── Handlers for User Governance ──
   const handleRoleChange = async (userId, newRole) => {
+    if (newRole === 'admin') {
+      setFeedback({ type: 'error', text: 'Security Violation: Cannot promote accounts to Administrator.' });
+      return;
+    }
+    const target = users.find(u => u.id === userId);
+    if (target?.role === 'admin') {
+      setFeedback({ type: 'error', text: 'Security Violation: Administrator accounts are permanent and cannot be modified.' });
+      return;
+    }
     try {
       setUpdatingUserId(userId);
       setFeedback(null);
       const { error } = await updateUserRole({ userId, role: newRole });
       if (error) throw new Error(error);
 
-      setFeedback({ type: 'success', text: `User role successfully updated to ${newRole}.` });
+      const label = newRole === 'medical_staff' ? 'Medical Staff (Doctor)' : 'General User';
+      setFeedback({ type: 'success', text: `User role successfully updated to ${label}.` });
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
       loadStats();
     } catch (err) {
@@ -221,7 +263,7 @@ export default function AdminDashboardPage() {
       <header className="mb-8 animate-fade-in-up">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-600 via-primary to-info flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-info flex items-center justify-center text-white shadow-lg shadow-primary/20">
               <Shield className="h-6 w-6" />
             </div>
             <div>
@@ -229,7 +271,7 @@ export default function AdminDashboardPage() {
                 <h1 className="text-2xl md:text-3xl font-bold text-foreground">
                   Hospital Administration
                 </h1>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/25">
                   Root Admin
                 </span>
               </div>
@@ -282,8 +324,8 @@ export default function AdminDashboardPage() {
           title="Total Registered Users"
           value={loadingStats ? '—' : stats?.total_users ?? 0}
           subtitle="Registered hospital accounts"
-          icon={<Users className="h-5 w-5 text-indigo-600" />}
-          gradient="from-indigo-500/10 to-indigo-500/5 border-indigo-500/20 hover:border-indigo-500/40 cursor-pointer"
+          icon={<Users className="h-5 w-5 text-primary" />}
+          gradient="from-primary/10 to-primary/5 border-primary/20 hover:border-primary/40 cursor-pointer"
           onClick={() => setActiveTab('users')}
         />
         <MetricCard
@@ -350,83 +392,243 @@ export default function AdminDashboardPage() {
           ══════════════════════════════════════════════════════════ */}
       {activeTab === 'predictions' && (
         <div className="space-y-4 animate-fade-in">
-          {/* Controls Bar */}
-          <div className="glass rounded-2xl p-4 border border-border/40 flex flex-col md:flex-row items-center justify-between gap-4">
-            {/* Search */}
-            <div className="relative w-full md:w-80">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
-              <input
-                type="text"
-                placeholder="Search patient, ID, or scan UUID…"
-                value={predictionSearch}
-                onChange={e => {
-                  setPredictionSearch(e.target.value);
-                  setPredictionPage(1);
-                }}
-                className="w-full pl-10 pr-4 py-2 rounded-xl bg-surface border border-border text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-              />
+          {/* Controls Bar (Executive Healthcare Studio Styling) */}
+          <div className="glass rounded-2xl p-4 border border-border/40 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4">
+            {/* Search Input with Custom Professional Scope Selector (Google/Lucide Icons) */}
+            <div className="flex items-center gap-2 w-full xl:w-auto">
+              {/* Professional Scope Dropdown Popover */}
+              <div className="relative" ref={targetDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setTargetDropdownOpen(prev => !prev)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface border border-border text-xs font-semibold text-foreground hover:bg-surface-hover hover:border-primary/40 transition-all cursor-pointer shadow-xs shrink-0"
+                  title="Select search field scope"
+                >
+                  <ActiveTargetIcon className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span className="whitespace-nowrap hidden sm:inline">{activeTargetOption.label}</span>
+                  <ChevronDown className={`h-3 w-3 text-muted transition-transform duration-200 ${targetDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {targetDropdownOpen && (
+                  <div className="absolute left-0 top-full mt-1.5 w-52 rounded-xl bg-surface/98 backdrop-blur-md border border-border shadow-xl py-1 z-50 animate-scale-in">
+                    <div className="px-3 py-1 text-[10px] font-bold text-muted uppercase tracking-wider border-b border-border/50 mb-0.5">
+                      Search Scope
+                    </div>
+                    {SEARCH_TARGET_OPTIONS.map(opt => {
+                      const Icon = opt.icon;
+                      const isSelected = searchTarget === opt.id;
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            setSearchTarget(opt.id);
+                            setTargetDropdownOpen(false);
+                            setPredictionPage(1);
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors cursor-pointer text-left ${
+                            isSelected
+                              ? 'bg-primary/10 text-primary font-bold'
+                              : 'text-foreground hover:bg-surface-hover/80'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Icon className={`h-3.5 w-3.5 shrink-0 ${isSelected ? 'text-primary' : 'text-secondary'}`} />
+                            <span>{opt.label}</span>
+                          </div>
+                          {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Search Field */}
+              <div className="relative flex-1 sm:w-80">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
+                <input
+                  type="text"
+                  placeholder={
+                    searchTarget === 'patient_name'
+                      ? 'Search by patient name…'
+                      : searchTarget === 'uploader'
+                        ? 'Search by uploader name or email…'
+                        : searchTarget === 'patient_id'
+                          ? 'Search hospital PID (e.g. PID002)…'
+                          : searchTarget === 'scan_id'
+                            ? 'Search scan ID…'
+                            : 'Search scans across all fields…'
+                  }
+                  value={predictionSearch}
+                  onChange={e => {
+                    setPredictionSearch(e.target.value);
+                    setPredictionPage(1);
+                  }}
+                  className="w-full pl-10 pr-8 py-2 rounded-xl bg-surface border border-border text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                />
+                {predictionSearch && (
+                  <button
+                    onClick={() => {
+                      setPredictionSearch('');
+                      setPredictionPage(1);
+                    }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-foreground p-0.5 rounded-full cursor-pointer"
+                    title="Clear search"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* Filter Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
-              {/* Classification filter */}
-              <div className="flex items-center rounded-xl bg-surface border border-border p-1 text-xs">
-                {['all', 'PNEUMONIA', 'NORMAL'].map(cls => (
-                  <button
-                    key={cls}
-                    onClick={() => {
-                      setPredictionClass(cls);
-                      setPredictionPage(1);
-                    }}
-                    className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-                      predictionClass === cls
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'text-secondary hover:text-foreground'
-                    }`}
-                  >
-                    {cls === 'all' ? 'All Classes' : cls}
-                  </button>
-                ))}
-              </div>
-
-              {/* Status filter */}
-              <div className="flex items-center rounded-xl bg-surface border border-border p-1 text-xs">
-                {[
-                  { id: 'all', label: 'All Reviews' },
-                  { id: 'pending', label: 'Pending' },
-                  { id: 'reviewed', label: 'Reviewed' },
-                ].map(s => (
-                  <button
-                    key={s.id}
-                    onClick={() => {
-                      setPredictionStatus(s.id);
-                      setPredictionPage(1);
-                    }}
-                    className={`px-3 py-1 rounded-lg font-medium transition-all cursor-pointer ${
-                      predictionStatus === s.id
-                        ? 'bg-indigo-600 text-white shadow-xs'
-                        : 'text-secondary hover:text-foreground'
-                    }`}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Uncertainty filter */}
+            {/* Structured Semantic Filters (Clustered, Non-Mashy) */}
+            <div className="flex items-center gap-2 overflow-x-auto w-full xl:w-auto pb-1 xl:pb-0">
+              {/* 1. Master View */}
               <button
+                type="button"
+                onClick={() => {
+                  setPredictionClass('all');
+                  setPredictionStatus('all');
+                  setPredictionUncertain('all');
+                  setOnlyMyUploads(false);
+                  setPredictionPage(1);
+                }}
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  isAllActive
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'bg-surface border border-border text-secondary hover:text-foreground hover:bg-surface-hover'
+                }`}
+                title="View all hospital scans"
+              >
+                All Scans
+              </button>
+
+              <div className="h-4 w-px bg-border/60 mx-0.5 hidden sm:block shrink-0" />
+
+              {/* 2. Diagnostic Class Group (Same Class Things Grouped Together) */}
+              <div className="flex items-center p-0.5 rounded-full bg-surface border border-border shadow-2xs gap-0.5" title="Filter by Diagnostic Class">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPredictionClass(prev => prev === 'PNEUMONIA' ? 'all' : 'PNEUMONIA');
+                    setPredictionPage(1);
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                    predictionClass === 'PNEUMONIA'
+                      ? 'bg-pneumonia text-white shadow-xs font-bold'
+                      : 'text-secondary hover:text-pneumonia hover:bg-pneumonia/10'
+                  }`}
+                  title="Filter scans diagnosed as Pneumonia"
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${predictionClass === 'PNEUMONIA' ? 'bg-white' : 'bg-pneumonia'}`} />
+                  <span>PNEUMONIA</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPredictionClass(prev => prev === 'NORMAL' ? 'all' : 'NORMAL');
+                    setPredictionPage(1);
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                    predictionClass === 'NORMAL'
+                      ? 'bg-success text-white shadow-xs font-bold'
+                      : 'text-secondary hover:text-success hover:bg-success/10'
+                  }`}
+                  title="Filter scans diagnosed as Normal"
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full ${predictionClass === 'NORMAL' ? 'bg-white' : 'bg-success'}`} />
+                  <span>NORMAL</span>
+                </button>
+              </div>
+
+              <div className="h-4 w-px bg-border/60 mx-0.5 hidden sm:block shrink-0" />
+
+              {/* 3. Review Workflow Status Group */}
+              <div className="flex items-center p-0.5 rounded-full bg-surface border border-border shadow-2xs gap-0.5" title="Filter by Doctor Review Status">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPredictionStatus(prev => prev === 'pending' ? 'all' : 'pending');
+                    setPredictionPage(1);
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                    predictionStatus === 'pending'
+                      ? 'bg-primary text-white shadow-xs font-bold'
+                      : 'text-secondary hover:text-foreground hover:bg-surface-hover'
+                  }`}
+                  title="Filter scans awaiting doctor review"
+                >
+                  <Clock className="h-3 w-3" />
+                  <span>Pending</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPredictionStatus(prev => prev === 'reviewed' ? 'all' : 'reviewed');
+                    setPredictionPage(1);
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                    predictionStatus === 'reviewed'
+                      ? 'bg-primary text-white shadow-xs font-bold'
+                      : 'text-secondary hover:text-foreground hover:bg-surface-hover'
+                  }`}
+                  title="Filter scans confirmed or overridden by doctors"
+                >
+                  <CheckCircle2 className="h-3 w-3" />
+                  <span>Reviewed</span>
+                </button>
+              </div>
+
+              <div className="h-4 w-px bg-border/60 mx-0.5 hidden sm:block shrink-0" />
+
+              {/* 4. Special Flag: Uncertain Only (Different Amber Warning Color with Live Beacon & Glow) */}
+              <button
+                type="button"
                 onClick={() => {
                   setPredictionUncertain(prev => prev === 'yes' ? 'all' : 'yes');
                   setPredictionPage(1);
                 }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   predictionUncertain === 'yes'
-                    ? 'bg-warning/10 border-warning text-warning'
-                    : 'bg-surface border-border text-secondary hover:text-foreground'
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border border-amber-500 shadow-md shadow-amber-500/30 ring-2 ring-amber-400/40 font-bold scale-[1.02]'
+                    : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/35 hover:bg-amber-500/20 hover:border-amber-500/60 shadow-2xs'
                 }`}
+                title="Filter scans flagged uncertain by AI gatekeeper"
               >
-                <AlertTriangle className="h-3 w-3" />
-                Uncertain Only
+                <span className="relative flex h-2 w-2">
+                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${predictionUncertain === 'yes' ? 'bg-white opacity-75' : 'bg-amber-400 opacity-75'}`}></span>
+                  <span className={`relative inline-flex rounded-full h-2 w-2 ${predictionUncertain === 'yes' ? 'bg-white' : 'bg-amber-500'}`}></span>
+                </span>
+                <AlertTriangle className={`h-3.5 w-3.5 ${predictionUncertain === 'yes' ? 'text-white' : 'text-amber-600 dark:text-amber-400'}`} />
+                <span>Uncertain Only</span>
+                {stats?.uncertain_scans > 0 && (
+                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
+                    predictionUncertain === 'yes' ? 'bg-white/25 text-white' : 'bg-amber-500/20 text-amber-800 dark:text-amber-200'
+                  }`}>
+                    {stats.uncertain_scans}
+                  </span>
+                )}
+              </button>
+
+              {/* 5. Special Flag: My Uploads */}
+              <button
+                type="button"
+                onClick={() => {
+                  setOnlyMyUploads(prev => !prev);
+                  setPredictionPage(1);
+                }}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  onlyMyUploads
+                    ? 'bg-primary text-white shadow-sm font-bold'
+                    : 'bg-surface border border-border text-secondary hover:text-foreground hover:bg-surface-hover'
+                }`}
+                title="Filter scans uploaded by your admin account"
+              >
+                <User className="h-3.5 w-3.5" />
+                <span>My Uploads</span>
               </button>
             </div>
           </div>
@@ -435,7 +637,7 @@ export default function AdminDashboardPage() {
           <div className="glass rounded-2xl border border-border/40 overflow-hidden shadow-sm">
             {loadingPredictions ? (
               <div className="py-20 flex flex-col items-center justify-center">
-                <Spinner size="lg" className="text-indigo-600 mb-3" />
+                <Spinner size="lg" className="text-primary mb-3" />
                 <p className="text-sm text-secondary">Loading hospital predictions & clinical scans…</p>
               </div>
             ) : predictions.length === 0 ? (
@@ -443,20 +645,22 @@ export default function AdminDashboardPage() {
                 <Activity className="h-12 w-12 text-muted mx-auto mb-3" />
                 <h4 className="text-base font-bold text-foreground">No hospital predictions found</h4>
                 <p className="text-xs text-muted mt-1 max-w-sm mx-auto">
-                  {predictionSearch || predictionClass !== 'all' || predictionStatus !== 'all' || predictionUncertain !== 'all'
-                    ? 'No predictions match the selected filters. Try clearing your search.'
+                  {predictionSearch || !isAllActive
+                    ? 'No predictions match the selected filters. Try clearing your search or switching filter categories.'
                     : 'Screening records will appear here as doctors and patients submit scans.'}
                 </p>
-                {(predictionSearch || predictionClass !== 'all' || predictionStatus !== 'all' || predictionUncertain !== 'all') && (
+                {(predictionSearch || !isAllActive) && (
                   <Button
                     size="sm"
                     variant="outline"
                     className="mt-4"
                     onClick={() => {
                       setPredictionSearch('');
+                      setSearchTarget('all');
                       setPredictionClass('all');
                       setPredictionStatus('all');
                       setPredictionUncertain('all');
+                      setOnlyMyUploads(false);
                       setPredictionPage(1);
                     }}
                   >
@@ -489,33 +693,92 @@ export default function AdminDashboardPage() {
                       })
                     : 'Recent';
 
+                  // 1. Patient identity (linked hospital patient record)
+                  const patientName = p.patients?.patient_name || null;
+                  const hospitalPid = p.patients?.patient_id || null;
+
+                  // 2. Uploader identity (who submitted/uploaded the scan image — strictly visible to admin)
+                  const isMyUpload = user?.id && p.user_id === user.id;
+                  const uploaderName = isMyUpload
+                    ? 'You (Admin)'
+                    : p.profiles?.full_name
+                      ? p.profiles.full_name
+                      : p.profiles?.email
+                        ? p.profiles.email.split('@')[0]
+                        : 'Direct Patient Intake';
+
+                  const uploaderRole = p.profiles?.role === 'admin'
+                    ? 'Hospital Admin'
+                    : p.profiles?.role === 'medical_staff'
+                      ? 'Medical Staff'
+                      : (p.profiles?.role === 'patient' || p.profiles?.role === 'general')
+                        ? 'Patient Direct'
+                        : 'Intake';
+
+                  const uploaderEmail = p.profiles?.email || null;
+
                   return (
                     <div
                       key={p.id || Math.random()}
-                      className="p-4 sm:p-5 hover:bg-surface-hover/40 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                      className="p-4 sm:p-5 hover:bg-surface-hover/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 group"
                     >
                       <div className="flex items-center gap-4 min-w-0">
-                        {/* Thumbnail / Image Preview */}
-                        <div className="w-14 h-14 rounded-xl bg-slate-900 border border-border/60 overflow-hidden shrink-0 flex items-center justify-center relative shadow-sm">
+                        {/* Clean X-ray Thumbnail Preview (Unobstructed) */}
+                        <div className="w-16 h-16 sm:w-18 sm:h-18 rounded-xl bg-slate-950 border border-border/80 overflow-hidden shrink-0 flex items-center justify-center relative shadow-sm ring-1 ring-black/5">
                           {thumbUrl ? (
                             <img
                               src={thumbUrl}
                               alt="Scan Preview"
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                               loading="lazy"
                             />
                           ) : (
                             <Activity className="h-6 w-6 text-slate-500" />
                           )}
                           {p.is_uncertain && (
-                            <div className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-warning ring-2 ring-slate-900" title="Flagged Uncertain" />
+                            <div className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-warning ring-2 ring-slate-950 shadow-xs" title="Flagged Uncertain" />
+                          )}
+                          {isMyUpload && (
+                            <div className="absolute top-1.5 left-1.5 w-2.5 h-2.5 rounded-full bg-primary ring-2 ring-slate-950 shadow-xs" title="Uploaded by you" />
                           )}
                         </div>
 
                         {/* Scan Details */}
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold border ${
+                          {/* ── Line 1: Patient Identity & Image Uploader Origin (Admin Transparency) ── */}
+                          <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                            {/* Patient Badge */}
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-primary/10 text-primary border border-primary/20 shadow-2xs">
+                              <User className="h-3.5 w-3.5 text-primary shrink-0" />
+                              <span>Patient: <strong className="font-extrabold text-foreground">{patientName || 'Direct Intake (Unlinked)'}</strong></span>
+                            </span>
+
+                            {hospitalPid && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-mono text-secondary bg-surface border border-border">
+                                <span className="text-muted text-[10px] uppercase font-bold">PID</span>
+                                {hospitalPid}
+                              </span>
+                            )}
+
+                            {/* Uploader Identification Badge (Admin Exclusive - Clean Design-System Styling) */}
+                            <span
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-surface text-secondary border border-border shadow-2xs hover:border-primary/40 transition-colors"
+                              title={uploaderEmail ? `Uploader account: ${uploaderName} (${uploaderEmail})` : `Uploaded by: ${uploaderName}`}
+                            >
+                              <Upload className="h-3.5 w-3.5 text-primary shrink-0" />
+                              <span>Uploaded by: <strong className="font-semibold text-foreground">{uploaderName}</strong> <span className="text-muted text-[10px] ml-0.5">({uploaderRole})</span></span>
+                            </span>
+
+                            {isMyUpload && (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] bg-primary text-white rounded-lg font-bold shadow-2xs">
+                                Your Upload
+                              </span>
+                            )}
+                          </div>
+
+                          {/* ── Line 2: Clinical AI Assessment & Doctor Review Status ── */}
+                          <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold border ${
                               isPneu
                                 ? 'bg-pneumonia/10 text-pneumonia border-pneumonia/30'
                                 : 'bg-success/10 text-success border-success/30'
@@ -524,68 +787,65 @@ export default function AdminDashboardPage() {
                             </span>
 
                             <span className="text-xs font-mono font-semibold text-foreground">
-                              {formattedConf}% confidence
+                              {formattedConf}% <span className="text-muted font-sans font-normal text-[11px]">confidence</span>
                             </span>
 
                             {p.is_uncertain && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-warning/10 text-warning border border-warning/30">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold bg-warning/10 text-warning border border-warning/30">
                                 <AlertTriangle className="h-2.5 w-2.5" />
                                 UNCERTAIN
                               </span>
                             )}
 
-                            {p.patients ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                                <Users className="h-2.5 w-2.5" />
-                                {p.patients.patient_name || 'Patient'}
-                              </span>
+                            {/* Clean Doctor Review Status badge */}
+                            {latestReview ? (
+                              latestReview.verdict === 'confirmed' ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-success/10 text-success border border-success/30">
+                                  <CheckCircle2 className="h-2.5 w-2.5" />
+                                  Doctor Confirmed
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-pneumonia/10 text-pneumonia border border-pneumonia/30">
+                                  <RefreshCw className="h-2.5 w-2.5" />
+                                  Overridden → {latestReview.override_class}
+                                </span>
+                              )
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-surface text-muted border border-border">
-                                Patient Direct Upload
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-muted/10 text-muted border border-border/50">
+                                <Clock className="h-2.5 w-2.5" />
+                                Pending Review
                               </span>
                             )}
                           </div>
 
+                          {/* ── Line 3: ID, Timestamp & Clinical Notes ── */}
                           <div className="flex items-center gap-2 text-xs text-muted truncate">
                             {shortId && <span className="font-mono text-[11px]">ID: {shortId}</span>}
                             {shortId && <span>·</span>}
-                            <span className="flex items-center gap-1">
+                            <span className="flex items-center gap-1 text-[11px]">
                               <Calendar className="h-3 w-3" />
                               {formattedDate}
                             </span>
-                          </div>
-
-                          {/* Doctor review summary if present */}
-                          {latestReview && (
-                            <div className="mt-1.5 flex items-center gap-2 text-xs">
-                              {latestReview.verdict === 'confirmed' ? (
-                                <span className="inline-flex items-center gap-1 text-success font-semibold">
-                                  <CheckCircle2 className="h-3 w-3" />
-                                  Doctor Confirmed
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 text-pneumonia font-semibold">
-                                  <RefreshCw className="h-3 w-3" />
-                                  Doctor Overridden → {latestReview.override_class}
-                                </span>
-                              )}
-                              {latestReview.clinical_notes && (
-                                <span className="text-secondary italic truncate max-w-xs">
+                            {latestReview?.clinical_notes && (
+                              <>
+                                <span>·</span>
+                                <span className="text-secondary italic text-xs truncate max-w-sm">
                                   "{latestReview.clinical_notes}"
                                 </span>
-                              )}
-                            </div>
-                          )}
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
 
                       {/* Action */}
                       <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                        <Link to={`/staff/scans/${p.id}`}>
+                        <Link to={`/admin/scans/${p.id}`}>
                           <Button
                             size="sm"
                             variant="outline"
-                            icon={<Eye className="h-3.5 w-3.5 text-indigo-600" />}
+                            icon={<Eye className="h-3.5 w-3.5 text-primary" />}
+                            className="hover:border-primary/50 hover:bg-primary/5"
                           >
                             Inspect & Review
                           </Button>
@@ -656,7 +916,7 @@ export default function AdminDashboardPage() {
                 <button
                   key={f.id}
                   onClick={() => setRoleFilter(f.id)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                     roleFilter === f.id
                       ? 'bg-primary text-white shadow-sm'
                       : 'bg-surface border border-border text-secondary hover:text-foreground hover:bg-surface-hover'
@@ -704,7 +964,7 @@ export default function AdminDashboardPage() {
                           {/* User info */}
                           <td className="py-4 px-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-indigo-500/20 flex items-center justify-center font-bold text-primary text-xs shrink-0">
+                              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-info/20 flex items-center justify-center font-bold text-primary text-xs shrink-0">
                                 {u.full_name ? u.full_name.charAt(0).toUpperCase() : u.email?.charAt(0).toUpperCase()}
                               </div>
                               <div className="min-w-0">
@@ -753,32 +1013,41 @@ export default function AdminDashboardPage() {
                           {/* Role Governance Actions */}
                           <td className="py-4 px-4 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              {/* Role Select Dropdown */}
-                              <select
-                                value={u.role}
-                                disabled={isUpdating}
-                                onChange={e => handleRoleChange(u.id, e.target.value)}
-                                className="px-2.5 py-1.5 rounded-lg bg-surface border border-border text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer disabled:opacity-50"
-                              >
-                                <option value="general">General User</option>
-                                <option value="medical_staff">Medical Staff (Doctor)</option>
-                                <option value="admin">Administrator</option>
-                              </select>
+                              {u.role === 'admin' ? (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/25 shadow-2xs">
+                                  <Shield className="h-3.5 w-3.5 text-primary shrink-0" />
+                                  <span>Administrator (Permanent)</span>
+                                </span>
+                              ) : (
+                                <>
+                                  {/* Role Select Dropdown — General User & Medical Staff (Doctor) ONLY */}
+                                  <select
+                                    value={u.role === 'medical_staff' ? 'medical_staff' : 'general'}
+                                    disabled={isUpdating}
+                                    onChange={e => handleRoleChange(u.id, e.target.value)}
+                                    className="px-2.5 py-1.5 rounded-lg bg-surface border border-border text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer disabled:opacity-50 shadow-2xs hover:border-primary/40 transition-colors"
+                                    title="Switch role between General User and Medical Staff"
+                                  >
+                                    <option value="general">General User</option>
+                                    <option value="medical_staff">Medical Staff (Doctor)</option>
+                                  </select>
 
-                              {/* Status Toggle Button */}
-                              {!isSelf && (
-                                <button
-                                  disabled={isUpdating}
-                                  onClick={() => handleStatusToggle(u.id, u.status !== false)}
-                                  className={`p-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
-                                    u.status !== false
-                                      ? 'text-error hover:bg-error/10 border-error/30'
-                                      : 'text-success hover:bg-success/10 border-success/30'
-                                  }`}
-                                  title={u.status !== false ? 'Suspend User' : 'Activate User'}
-                                >
-                                  {u.status !== false ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
-                                </button>
+                                  {/* Status Toggle Button */}
+                                  {!isSelf && (
+                                    <button
+                                      disabled={isUpdating}
+                                      onClick={() => handleStatusToggle(u.id, u.status !== false)}
+                                      className={`p-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+                                        u.status !== false
+                                          ? 'text-error hover:bg-error/10 border-error/30'
+                                          : 'text-success hover:bg-success/10 border-success/30'
+                                      }`}
+                                      title={u.status !== false ? 'Suspend User' : 'Activate User'}
+                                    >
+                                      {u.status !== false ? <UserX className="h-4 w-4" /> : <UserCheck className="h-4 w-4" />}
+                                    </button>
+                                  )}
+                                </>
                               )}
                             </div>
                           </td>
@@ -961,7 +1230,7 @@ export default function AdminDashboardPage() {
                       </p>
                     </div>
 
-                    <Link to={`/staff/scans/${log.prediction_id}`}>
+                    <Link to={`/admin/scans/${log.prediction_id}`}>
                       <Button variant="outline" size="sm" icon={<ArrowUpRight className="h-3.5 w-3.5" />}>
                         View Scan
                       </Button>
@@ -1070,7 +1339,7 @@ export default function AdminDashboardPage() {
             {/* Supabase Storage & Database */}
             <div className="glass rounded-2xl p-6 border border-border/40 space-y-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-indigo-500/15 text-indigo-600 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                   <HardDrive className="h-5 w-5" />
                 </div>
                 <div>
@@ -1129,7 +1398,7 @@ function TabButton({ active, onClick, icon, label, count, badge, badgeColor }) {
       onClick={onClick}
       className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-sm font-semibold transition-all border-b-2 whitespace-nowrap cursor-pointer ${
         active
-          ? 'border-indigo-600 text-indigo-600 bg-indigo-50/50'
+          ? 'border-primary text-primary bg-primary/5'
           : 'border-transparent text-secondary hover:text-foreground hover:bg-surface-hover/50'
       }`}
     >
@@ -1137,7 +1406,7 @@ function TabButton({ active, onClick, icon, label, count, badge, badgeColor }) {
       <span>{label}</span>
       {count !== undefined && count !== null && (
         <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-          active ? 'bg-indigo-600 text-white' : 'bg-surface border border-border text-muted'
+          active ? 'bg-primary text-white' : 'bg-surface border border-border text-muted'
         }`}>
           {count}
         </span>
@@ -1155,7 +1424,7 @@ function RoleBadge({ role }) {
   switch (role) {
     case 'admin':
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-primary/10 text-primary border border-primary/25">
           <Shield className="h-3 w-3" />
           Admin
         </span>

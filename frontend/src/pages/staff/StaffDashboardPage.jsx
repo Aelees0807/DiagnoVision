@@ -73,7 +73,7 @@ export default function StaffDashboardPage() {
             <div>
               <p className="text-sm text-muted font-medium">{greeting}</p>
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                {profile?.full_name ? `Dr. ${profile.full_name}` : 'Medical Staff'}
+                {profile?.full_name ? `${profile.full_name}` : 'Medical Staff'}
               </h1>
             </div>
           </div>

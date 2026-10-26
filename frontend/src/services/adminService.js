@@ -109,6 +109,26 @@ export async function fetchAdminUsers({ search = '', role = 'all', page = 1, lim
  */
 export async function updateUserRole({ userId, role }) {
   try {
+    // Security Policy: Never allow promoting accounts to admin via user governance
+    if (role === 'admin') {
+      return { data: null, error: 'Security Violation: Cannot promote users to Administrator.' };
+    }
+
+    if (role !== 'general' && role !== 'medical_staff') {
+      return { data: null, error: 'Invalid role. Only General User and Medical Staff are permitted.' };
+    }
+
+    // Verify target user is not an administrator
+    const { data: targetProfile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    if (targetProfile?.role === 'admin') {
+      return { data: null, error: 'Security Violation: Administrator accounts are permanent and cannot be modified.' };
+    }
+
     const { data, error } = await supabase.rpc('admin_update_user_role', {
       p_user_id: userId,
       p_role: role,
@@ -118,11 +138,16 @@ export async function updateUserRole({ userId, role }) {
       return { data, error: null };
     }
 
-    // Direct update fallback
+    if (error?.message) {
+      return { data: null, error: error.message };
+    }
+
+    // Direct update fallback (strictly excludes admin accounts)
     const { data: updateData, error: updateErr } = await supabase
       .from('profiles')
       .update({ role, updated_at: new Date().toISOString() })
       .eq('id', userId)
+      .neq('role', 'admin')
       .select()
       .single();
 
@@ -244,20 +269,30 @@ export async function fetchAdminPredictions({
   classification = 'all',
   uncertain = 'all',
   search = '',
+  searchTarget = 'patient_name',
+  onlyMyUploads = false,
+  currentUserId = null,
 } = {}) {
   try {
-    const from = (page - 1) * limit;
-    const to = from + limit - 1;
+    const isSearching = !!(search && search.trim());
+    // When searching, fetch up to 300 latest hospital records so search matches across all pages
+    const fetchLimit = isSearching ? 300 : limit;
+    const fetchFrom = isSearching ? 0 : (page - 1) * limit;
+    const fetchTo = fetchFrom + fetchLimit - 1;
 
     let query = supabase
       .from('medical_predictions')
       .select(`
         *,
         patients (id, patient_name, patient_id),
+        profiles:user_id (id, full_name, email, role),
         staff_reviews (id, verdict, override_class, clinical_notes, created_at, reviewer_id)
       `, { count: 'exact' })
       .order('created_at', { ascending: false });
 
+    if (onlyMyUploads && currentUserId) {
+      query = query.eq('user_id', currentUserId);
+    }
     if (status !== 'all') {
       query = query.eq('review_status', status);
     }
@@ -270,21 +305,67 @@ export async function fetchAdminPredictions({
       query = query.eq('is_uncertain', false);
     }
 
-    const { data, error, count } = await query.range(from, to);
+    const { data, error, count } = await query.range(fetchFrom, fetchTo);
     if (error) throw error;
 
     let filtered = data || [];
-    if (search && search.trim()) {
+    if (isSearching) {
       const q = search.trim().toLowerCase();
-      filtered = filtered.filter(item =>
-        String(item.id || '').toLowerCase().includes(q) ||
-        String(item.predicted_class || '').toLowerCase().includes(q) ||
-        String(item.patients?.patient_name || '').toLowerCase().includes(q) ||
-        String(item.patients?.patient_id || '').toLowerCase().includes(q)
-      );
+      filtered = filtered.filter(item => {
+        const patientName = (item.patients?.patient_name || '').toLowerCase();
+        const profileName = (item.profiles?.full_name || '').toLowerCase();
+        const profileEmail = (item.profiles?.email || '').toLowerCase();
+        const hospitalPid = (item.patients?.patient_id || '').toLowerCase();
+        const scanId = String(item.id || '');
+
+        if (searchTarget === 'patient_name') {
+          // Strictly match Patient Name (or direct intake uploader if unlinked)
+          // NEVER matches predicted_class (PNEUMONIA) or hospital PID to prevent false positives
+          if (item.patients?.patient_name) {
+            return patientName.includes(q);
+          }
+          return profileName.includes(q) || profileEmail.includes(q);
+        }
+
+        if (searchTarget === 'uploader') {
+          // Strictly match Uploader's Full Name or Email
+          return profileName.includes(q) || profileEmail.includes(q);
+        }
+
+        if (searchTarget === 'patient_id') {
+          // Strictly match Hospital Patient ID (e.g. PID002)
+          return hospitalPid.includes(q);
+        }
+
+        if (searchTarget === 'scan_id') {
+          // Strictly match Scan ID
+          const cleanQ = q.replace(/^#/, '').trim();
+          return scanId === cleanQ || scanId.includes(cleanQ);
+        }
+
+        // 'all' mode: matches patient name, profile name, email, hospital PID, or exact scan ID
+        // Note: NEVER matches predicted_class (PNEUMONIA / NORMAL) because that would match everything
+        const cleanQ = q.replace(/^#/, '').trim();
+        return (
+          patientName.includes(q) ||
+          profileName.includes(q) ||
+          profileEmail.includes(q) ||
+          hospitalPid.includes(q) ||
+          scanId === cleanQ
+        );
+      });
+
+      const totalFiltered = filtered.length;
+      const paginated = filtered.slice((page - 1) * limit, page * limit);
+      return {
+        data: paginated,
+        error: null,
+        count: totalFiltered,
+        hasMore: totalFiltered > page * limit,
+      };
     }
 
-    return { data: filtered, error: null, count: count || 0, hasMore: (count || 0) > to + 1 };
+    return { data: filtered, error: null, count: count || 0, hasMore: (count || 0) > fetchTo + 1 };
   } catch (err) {
     console.error('[adminService] fetchAdminPredictions error:', err);
     return { data: [], error: err.message || 'Failed to fetch predictions', count: 0, hasMore: false };

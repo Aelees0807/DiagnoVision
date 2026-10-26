@@ -4,11 +4,13 @@ import {
   X, Link2, User, UserPlus, AlertCircle, CheckCircle2, 
   ShieldCheck, ArrowRight 
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { fetchPatients, connectPatientScanByCode } from '@/services/staffService';
 
 export default function ConnectScanModal({ isOpen, onClose, onSuccess }) {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
   const [shareCode, setShareCode] = useState('');
   const [selectedPatientId, setSelectedPatientId] = useState('');
   const [patients, setPatients] = useState([]);
@@ -130,7 +132,7 @@ export default function ConnectScanModal({ isOpen, onClose, onSuccess }) {
                 variant="primary"
                 onClick={() => {
                   onClose();
-                  navigate(`/staff/scans/${successResult.prediction_id}`);
+                  navigate(isAdmin ? `/admin/scans/${successResult.prediction_id}` : `/staff/scans/${successResult.prediction_id}`);
                 }}
                 icon={<ArrowRight className="h-4 w-4" />}
               >

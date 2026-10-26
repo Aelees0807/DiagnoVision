@@ -115,6 +115,7 @@ export async function fetchStaffPredictions({
     .select(`
       *,
       patients (id, patient_name, patient_id),
+      profiles:user_id (id, full_name, email, role),
       staff_reviews (id, verdict, override_class, clinical_notes, created_at, reviewer_id)
     `, { count: 'exact' })
     .order('created_at', { ascending: false })
@@ -167,6 +168,7 @@ export async function fetchPredictionDetail(predictionId) {
     .select(`
       *,
       patients (id, patient_name, patient_id, age, gender),
+      profiles:user_id (id, full_name, email, role),
       staff_reviews (id, verdict, override_class, clinical_notes, created_at, reviewer_id)
     `)
     .eq('id', predictionId)

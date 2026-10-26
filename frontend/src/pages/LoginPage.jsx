@@ -31,7 +31,15 @@ export default function LoginPage() {
 
   // If already logged in, redirect role-appropriately
   if (isAuthenticated) {
-    const dest = from !== '/' ? from : isAdmin ? '/admin' : isMedicalStaff ? '/staff' : '/';
+    let dest = from;
+    if (isAdmin) {
+      if (dest === '/' || dest.startsWith('/staff')) {
+        const scanMatch = dest.match(/^\/staff\/scans\/(\d+)$/);
+        dest = scanMatch ? `/admin/scans/${scanMatch[1]}` : '/admin';
+      }
+    } else {
+      dest = from !== '/' ? from : isMedicalStaff ? '/staff' : '/';
+    }
     navigate(dest, { replace: true });
     return null;
   }
@@ -81,23 +89,26 @@ export default function LoginPage() {
         }
       } else {
         let targetPath = from;
-        if (from === '/' || from === '/login' || from === '/register') {
-          if (data?.user?.id) {
-            try {
-              const { data: profileData } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', data.user.id)
-                .single();
+        if (data?.user?.id) {
+          try {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('role')
+              .eq('id', data.user.id)
+              .single();
 
-              if (profileData?.role === 'admin') {
-                targetPath = '/admin';
-              } else if (profileData?.role === 'medical_staff') {
+            if (profileData?.role === 'admin') {
+              if (targetPath === '/' || targetPath === '/login' || targetPath === '/register' || targetPath.startsWith('/staff')) {
+                const scanMatch = targetPath.match(/^\/staff\/scans\/(\d+)$/);
+                targetPath = scanMatch ? `/admin/scans/${scanMatch[1]}` : '/admin';
+              }
+            } else if (profileData?.role === 'medical_staff') {
+              if (targetPath === '/' || targetPath === '/login' || targetPath === '/register') {
                 targetPath = '/staff';
               }
-            } catch {
-              // fallback to from
             }
+          } catch {
+            // fallback to from
           }
         }
         navigate(targetPath, { replace: true });

@@ -175,9 +175,9 @@ export default function HistoryPage() {
                 Admin Console
               </Button>
             </Link>
-            <Link to="/staff/scans?scope=all">
+            <Link to="/admin">
               <Button size="sm" variant="outline" icon={<Activity className="h-4 w-4 text-info" />}>
-                All Hospital Scans
+                Manage Hospital Scans
               </Button>
             </Link>
           </div>
@@ -214,9 +214,9 @@ export default function HistoryPage() {
                     Open Admin Console
                   </Button>
                 </Link>
-                <Link to="/staff/scans?scope=all" className="w-full sm:w-auto">
+                <Link to="/admin" className="w-full sm:w-auto">
                   <Button variant="outline" className="w-full justify-center" icon={<Activity className="h-4 w-4 text-info" />}>
-                    View All Hospital Scans
+                    Manage Hospital Scans
                   </Button>
                 </Link>
               </div>
