@@ -19,7 +19,7 @@ import { Spinner } from '@/components/ui/Spinner';
 export default function ScanDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, user, isAdmin } = useAuth();
   useDocumentTitle('Scan Detail');
 
   const [prediction, setPrediction] = useState(null);
@@ -138,9 +138,11 @@ export default function ScanDetailPage() {
     if (!selectedPatientId) return;
     try {
       setLinkingPatient(true);
-      const { error: err } = await linkPredictionToPatient(parseInt(id), parseInt(selectedPatientId));
+      const targetPatientId = selectedPatientId === 'unlink' ? null : parseInt(selectedPatientId);
+      const { error: err } = await linkPredictionToPatient(parseInt(id), targetPatientId);
       if (err) throw err;
       setShowLinkPatient(false);
+      setSelectedPatientId('');
       loadDetail();
     } catch (err) {
       setError(err.message);
@@ -172,8 +174,10 @@ export default function ScanDetailPage() {
           <h2 className="text-xl font-bold text-foreground mb-2">
             {error || 'Scan not found'}
           </h2>
-          <Link to="/staff/scans">
-            <Button variant="secondary" className="mt-4">Back to Scans</Button>
+          <Link to={isAdmin ? "/admin" : "/staff/scans"}>
+            <Button variant="secondary" className="mt-4">
+              {isAdmin ? 'Back to Admin Console' : 'Back to Scans'}
+            </Button>
           </Link>
         </div>
       </Container>
@@ -186,15 +190,39 @@ export default function ScanDetailPage() {
     ? reviews[0].override_class
     : prediction.predicted_class;
 
+  // Resolve patient display name (for admin oversight)
+  const patientDisplayName =
+    patient?.patient_name ||
+    prediction.profiles?.full_name ||
+    (prediction.profiles?.email ? prediction.profiles.email.split('@')[0] : null) ||
+    (isAdmin ? 'Direct Intake' : null);
+
+  const isOwnScan = user?.id && prediction.user_id === user.id;
+
   return (
     <Container size="xl" className="py-8 md:py-12">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-muted mb-6 animate-fade-in-up">
-        <Link to="/staff" className="hover:text-primary transition-colors">Dashboard</Link>
-        <ChevronRight className="h-3.5 w-3.5" />
-        <Link to="/staff/scans" className="hover:text-primary transition-colors">Scans</Link>
-        <ChevronRight className="h-3.5 w-3.5" />
-        <span className="text-foreground font-medium">#{prediction.id}</span>
+        {isAdmin ? (
+          <>
+            <Link to="/admin" className="hover:text-primary transition-colors flex items-center gap-1.5 font-medium">
+              <Shield className="h-4 w-4 text-indigo-500" />
+              <span>Admin Console</span>
+            </Link>
+            <ChevronRight className="h-3.5 w-3.5 text-muted" />
+            <Link to="/admin" className="hover:text-primary transition-colors font-medium">Hospital Scans</Link>
+            <ChevronRight className="h-3.5 w-3.5 text-muted" />
+            <span className="text-foreground font-semibold font-mono">Scan #{prediction.id}</span>
+          </>
+        ) : (
+          <>
+            <Link to="/staff" className="hover:text-primary transition-colors">Dashboard</Link>
+            <ChevronRight className="h-3.5 w-3.5" />
+            <Link to="/staff/scans" className="hover:text-primary transition-colors">Scans</Link>
+            <ChevronRight className="h-3.5 w-3.5" />
+            <span className="text-foreground font-medium">#{prediction.id}</span>
+          </>
+        )}
       </nav>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -202,22 +230,47 @@ export default function ScanDetailPage() {
         {/* ── Left Column: Image + Heatmap ── */}
         <div className="lg:col-span-1 space-y-4">
           {/* X-Ray Image */}
-          <div className="glass rounded-2xl overflow-hidden border border-border/30 animate-fade-in-up">
+          <div className="glass rounded-2xl overflow-hidden border border-border/30 animate-fade-in-up shadow-sm">
             <div className="flex items-center justify-between p-4 border-b border-border/30">
-              <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Eye className="h-4 w-4 text-primary" />
-                {showHeatmap ? 'Grad-CAM Heatmap' : 'Original X-Ray'}
-              </h3>
+              <div className="flex items-center gap-2 min-w-0">
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 shrink-0">
+                  <Eye className="h-4 w-4 text-primary" />
+                  {showHeatmap ? 'Grad-CAM Heatmap' : 'Original X-Ray'}
+                </h3>
+                {/* Admin-only Patient Label at the X-ray (Hidden from doctor view for privacy) */}
+                {isAdmin && patientDisplayName && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/25 truncate" title={`Patient: ${patientDisplayName}`}>
+                    <User className="h-3 w-3 text-indigo-500 shrink-0" />
+                    <span className="truncate">{patientDisplayName}</span>
+                  </span>
+                )}
+              </div>
               {heatmapUrl && (
                 <button
                   onClick={() => setShowHeatmap(!showHeatmap)}
-                  className="text-xs text-primary font-medium hover:text-primary-hover transition-colors cursor-pointer"
+                  className="text-xs text-primary font-medium hover:text-primary-hover transition-colors cursor-pointer shrink-0 ml-2"
                 >
                   {showHeatmap ? 'Show Original' : 'Show Heatmap'}
                 </button>
               )}
             </div>
-            <div className="aspect-square bg-foreground/5 flex items-center justify-center relative">
+            <div className="aspect-square bg-foreground/5 flex items-center justify-center relative overflow-hidden">
+              {/* Admin Floating Badge directly on the X-ray viewer */}
+              {isAdmin && patientDisplayName && (
+                <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/85 backdrop-blur-md border border-indigo-500/40 text-xs font-semibold text-white shadow-lg pointer-events-none animate-fade-in">
+                  <User className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
+                  <span>Patient: <strong className="text-indigo-200">{patientDisplayName}</strong></span>
+                  {patient?.patient_id && (
+                    <span className="text-[10px] text-slate-400 font-mono">({patient.patient_id})</span>
+                  )}
+                  {isOwnScan && (
+                    <span className="ml-1 text-[10px] bg-indigo-600 text-white px-2 py-0.5 rounded-full font-bold">
+                      Your Upload
+                    </span>
+                  )}
+                </div>
+              )}
+
               {(showHeatmap ? heatmapUrl : imageUrl) ? (
                 <img
                   src={showHeatmap ? heatmapUrl : imageUrl}
@@ -244,6 +297,24 @@ export default function ScanDetailPage() {
                 </div>
               )}
             </div>
+
+            {/* Admin Oversight Banner under X-Ray */}
+            {isAdmin && (
+              <div className="px-4 py-2.5 bg-indigo-50/60 dark:bg-indigo-950/30 border-t border-border/30 flex items-center justify-between text-xs text-secondary">
+                <span className="flex items-center gap-1.5 font-medium text-foreground">
+                  <User className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                  <span>Patient: <strong className="text-indigo-600 dark:text-indigo-400">{patientDisplayName}</strong></span>
+                  {isOwnScan && (
+                    <span className="text-[10px] bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 px-1.5 py-0.5 rounded font-bold ml-1">
+                      Your Upload
+                    </span>
+                  )}
+                </span>
+                <span className="text-[10px] text-muted italic hidden sm:inline">
+                  Admin Oversight (Private from doctor view)
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Patient Info / Link Patient */}
@@ -269,37 +340,83 @@ export default function ScanDetailPage() {
                 {patient.patient_id && <p className="text-xs text-muted">Hospital Record ID: {patient.patient_id}</p>}
                 {patient.age && <p className="text-xs text-muted">Age: {patient.age} {patient.gender ? `· ${patient.gender}` : ''}</p>}
                 <div className="pt-2 border-t border-border/40 flex items-center justify-between mt-3">
-                  <Link
-                    to={`/staff/scans?patientId=${patient.id}`}
-                    className="text-xs text-primary font-semibold hover:text-primary-hover flex items-center gap-1 transition-colors"
-                  >
-                    All patient scans <ChevronRight className="h-3 w-3" />
-                  </Link>
-                  <button
-                    onClick={loadPatientsList}
-                    className="text-xs text-muted hover:text-primary transition-colors cursor-pointer"
-                  >
-                    Reassign
-                  </button>
+                  {isAdmin ? (
+                    <Link
+                      to="/admin"
+                      className="text-xs text-primary font-semibold hover:text-primary-hover flex items-center gap-1 transition-colors"
+                    >
+                      Hospital Records Console <ChevronRight className="h-3 w-3" />
+                    </Link>
+                  ) : (
+                    <Link
+                      to={`/staff/scans?patientId=${patient.id}`}
+                      className="text-xs text-primary font-semibold hover:text-primary-hover flex items-center gap-1 transition-colors"
+                    >
+                      All patient scans <ChevronRight className="h-3 w-3" />
+                    </Link>
+                  )}
+                  {!isAdmin && (
+                    <button
+                      onClick={loadPatientsList}
+                      className="text-xs text-muted hover:text-primary transition-colors cursor-pointer"
+                    >
+                      Reassign
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (
               <div className="text-center py-2">
                 <p className="text-xs text-secondary mb-3 leading-relaxed">
-                  This scan is in the hospital triage pool. Claim and assign it to one of your patients to establish direct care tracking.
+                  This scan is in the hospital intake triage pool.
                 </p>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={loadPatientsList}
-                  icon={<Link2 className="h-3.5 w-3.5" />}
-                  className="w-full"
-                >
-                  Claim & Assign to Patient
-                </Button>
+                {!isAdmin && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={loadPatientsList}
+                    icon={<Link2 className="h-3.5 w-3.5" />}
+                    className="w-full"
+                  >
+                    Claim & Assign to Patient
+                  </Button>
+                )}
               </div>
             )}
           </div>
+
+          {/* Admin Oversight Card: Uploaded By Whomever (Strictly hidden from doctors for patient privacy) */}
+          {isAdmin && (
+            <div className="glass rounded-2xl p-4 border border-indigo-500/25 bg-indigo-500/5 shadow-xs animate-fade-in-up">
+              <h4 className="text-xs font-bold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider flex items-center gap-1.5 mb-2.5">
+                <Shield className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+                Admin Audit · Upload Origin
+              </h4>
+              <div className="p-3 rounded-xl bg-surface border border-border/60 space-y-1.5">
+                <div className="flex items-center justify-between flex-wrap gap-1">
+                  <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <User className="h-3.5 w-3.5 text-indigo-500 shrink-0" />
+                    {isOwnScan ? (
+                      <span>You (Hospital Administrator)</span>
+                    ) : (
+                      <span>{prediction.profiles?.full_name || 'Direct Patient / Anonymous'}</span>
+                    )}
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/20">
+                    {prediction.profiles?.role === 'admin' ? 'Hospital Admin' : prediction.profiles?.role === 'medical_staff' ? 'Medical Staff' : 'Patient Direct'}
+                  </span>
+                </div>
+                {prediction.profiles?.email && (
+                  <p className="text-[11px] text-muted font-mono">{prediction.profiles.email}</p>
+                )}
+                {isOwnScan && (
+                  <p className="text-[11px] text-indigo-600 dark:text-indigo-400 font-semibold pt-1 border-t border-border/40">
+                    ✓ Uploaded directly by your administrator account
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ── Right Column: Details + Review ── */}
@@ -440,9 +557,9 @@ export default function ScanDetailPage() {
               >
                 Add Review
               </Button>
-              <Link to="/staff/scans">
+              <Link to={isAdmin ? "/admin" : "/staff/scans"}>
                 <Button variant="outline" icon={<ChevronLeft className="h-4 w-4" />}>
-                  Back to Scans
+                  {isAdmin ? 'Back to Admin Console' : 'Back to Scans'}
                 </Button>
               </Link>
             </div>
@@ -584,6 +701,9 @@ export default function ScanDetailPage() {
                   className="w-full px-4 py-2.5 rounded-xl border border-border bg-surface text-foreground text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all mb-4 cursor-pointer"
                 >
                   <option value="">Select a patient...</option>
+                  {prediction?.patient_id && (
+                    <option value="unlink">✕ Detach from Patient (Reset to Unassigned Intake)</option>
+                  )}
                   {patients.map(p => (
                     <option key={p.id} value={p.id}>
                       {p.patient_name} {p.patient_id ? `(${p.patient_id})` : ''}

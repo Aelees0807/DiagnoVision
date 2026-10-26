@@ -344,7 +344,7 @@ export default function ScanManagementPage() {
         <>
           <div className="space-y-3">
             {predictions.map((prediction, i) => (
-              <ScanRow key={prediction.id} prediction={prediction} index={i} scope={filters.scope} />
+              <ScanRow key={prediction.id} prediction={prediction} index={i} scope={filters.scope} isAdmin={isAdmin} />
             ))}
           </div>
 
@@ -387,7 +387,7 @@ export default function ScanManagementPage() {
 
 // ── Sub-Components ──────────────────────────────────────────
 
-function ScanRow({ prediction, index, scope }) {
+function ScanRow({ prediction, index, scope, isAdmin }) {
   const isPneumonia = prediction.predicted_class === 'PNEUMONIA';
   const patient = prediction.patients;
   const reviews = prediction.staff_reviews || [];
@@ -445,6 +445,11 @@ function ScanRow({ prediction, index, scope }) {
               <Users className="h-2.5 w-2.5" />
               {patient.patient_name}
             </span>
+          ) : isAdmin ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30">
+              <Users className="h-2.5 w-2.5 text-indigo-600 dark:text-indigo-400" />
+              {prediction.profiles?.full_name || 'Direct Patient Upload'}
+            </span>
           ) : (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold bg-warning/10 text-warning border border-warning/30">
               <Inbox className="h-2.5 w-2.5" />
@@ -456,7 +461,9 @@ function ScanRow({ prediction, index, scope }) {
         <p className="text-xs text-muted truncate">
           {patient?.patient_name
             ? `${patient.patient_name}${patient.patient_id ? ` · Hospital ID: ${patient.patient_id}` : ''}`
-            : 'Unassigned screening · Click to claim and link to your patient'}
+            : isAdmin && prediction.profiles?.full_name
+              ? `Uploaded by ${prediction.profiles.full_name}${prediction.profiles.email ? ` (${prediction.profiles.email})` : ''}`
+              : 'Unassigned screening · Click to claim and link to your patient'}
           {' · '}
           <span className="inline-flex items-center gap-1">
             <Calendar className="h-3 w-3" />

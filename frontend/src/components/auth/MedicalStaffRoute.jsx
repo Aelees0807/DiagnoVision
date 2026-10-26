@@ -23,7 +23,16 @@ export function MedicalStaffRoute({ children }) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
-  if (!isMedicalStaff && !isAdmin) {
+  // If user is an administrator, strictly redirect away from medical staff dashboard/views to admin console
+  if (isAdmin) {
+    const scanMatch = location.pathname.match(/^\/staff\/scans\/(\d+)$/);
+    if (scanMatch) {
+      return <Navigate to={`/admin/scans/${scanMatch[1]}`} replace />;
+    }
+    return <Navigate to="/admin" replace />;
+  }
+
+  if (!isMedicalStaff) {
     return <Navigate to="/" replace />;
   }
 

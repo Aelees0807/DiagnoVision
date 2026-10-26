@@ -198,13 +198,22 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  v_current_role text;
 begin
   if not (public.is_admin()) then
     return jsonb_build_object('success', false, 'error', 'Unauthorized. Only administrators can assign roles.');
   end if;
 
-  if p_role not in ('general', 'medical_staff', 'admin') then
-    return jsonb_build_object('success', false, 'error', 'Invalid role specified.');
+  -- Security Policy: Role governance only permits switching between general user and medical_staff
+  if p_role not in ('general', 'medical_staff') then
+    return jsonb_build_object('success', false, 'error', 'Security Violation: Cannot promote accounts to Administrator.');
+  end if;
+
+  -- Security Policy: Administrator roles are immutable and cannot be demoted
+  select role into v_current_role from public.profiles where id = p_user_id;
+  if v_current_role = 'admin' then
+    return jsonb_build_object('success', false, 'error', 'Security Violation: Administrator accounts cannot be modified or demoted.');
   end if;
 
   update public.profiles

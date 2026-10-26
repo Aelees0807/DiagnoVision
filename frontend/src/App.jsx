@@ -93,7 +93,9 @@ export default function App() {
                 <Route path="/staff/scans" element={<MedicalStaffRoute><ScanManagementPage /></MedicalStaffRoute>} />
                 <Route path="/staff/scans/:id" element={<MedicalStaffRoute><ScanDetailPage /></MedicalStaffRoute>} />
 
+                {/* Admin Routes */}
                 <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
+                <Route path="/admin/scans/:id" element={<AdminRoute><ScanDetailPage /></AdminRoute>} />
 
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
