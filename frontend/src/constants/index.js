@@ -45,10 +45,10 @@ export const GATEKEEPER_MODEL = {
 
 /** File upload constraints */
 export const UPLOAD_CONSTRAINTS = {
-  acceptedFormats: ['.jpg', '.jpeg', '.png', '.bmp'],
-  acceptedMimeTypes: ['image/jpeg', 'image/png', 'image/bmp'],
-  maxSizeMB: 10,
-  maxSizeBytes: 10 * 1024 * 1024,
+  acceptedFormats: ['.jpg', '.jpeg', '.png', '.bmp', '.webp'],
+  acceptedMimeTypes: ['image/jpeg', 'image/png', 'image/bmp', 'image/webp'],
+  maxSizeMB: 20,
+  maxSizeBytes: 20 * 1024 * 1024,
 };
 
 /** Dataset information */
