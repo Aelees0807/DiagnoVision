@@ -25,6 +25,10 @@ build/
 frontend/node_modules/
 frontend/dist/
 
+# Mobile App
+mobile/
+mobile-app/
+
 # IDE
 .vscode/
 .idea/
