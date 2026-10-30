@@ -132,6 +132,11 @@ class FastGradCAM:
     Backpropagating only through the 2-layer classifier head is mathematically
     identical to full Grad-CAM (verified diff: < 2e-7), while using < 100 KB RAM
     and running in ~30ms without memory spikes.
+    
+    NOTE: Server-side Grad-CAM generation is now disabled by default to prevent
+    memory exhaustion on Render's free tier. The frontend uses client-side ONNX
+    Runtime Web for Grad-CAM visualization. This class remains available for
+    explicit server-side generation when requested (debugging, backward compatibility).
     """
 
     def __init__(self, model):
@@ -283,6 +288,24 @@ def run_full_prediction(
     """
     Full prediction pipeline: gatekeeper → pneumonia → Grad-CAM.
     Returns the complete response matching the frontend API contract.
+    
+    Args:
+        registry: ModelRegistry with loaded pneumonia and gatekeeper models
+        file_bytes: Raw image bytes from uploaded file
+        include_gradcam: bool = False — Generate Grad-CAM server-side (legacy/fallback)
+            Default False to avoid memory pressure (~150MB per request).
+            Client-side ONNX generation is recommended for production.
+            Set to True explicitly for debugging or backward compatibility.
+    
+    Returns:
+        dict: Complete prediction response with gatekeeper, prediction, gradcam, 
+              model info, and processing time.
+    
+    Note:
+        Server-side Grad-CAM generation adds ~150MB memory per request.
+        On Render's free tier (512MB RAM), this can cause OOM restarts under load.
+        The frontend uses client-side ONNX Runtime Web for Grad-CAM visualization
+        to avoid backend memory pressure.
     """
     start_time = time.time()
     transform = get_transform()

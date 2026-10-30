@@ -46,7 +46,10 @@ def _validate_file(file: UploadFile):
 @router.post("/predict")
 async def predict(
     image: UploadFile = File(...),
-    include_gradcam: str = Form("true"),
+    # Default "false" - client-side ONNX handles Grad-CAM visualization
+    # Reduces server memory usage from ~350MB to ~200MB (critical for Render 512MB free tier)
+    # Explicit "true" supported for backward compatibility and debugging
+    include_gradcam: str = Form("false"),
 ):
     """
     Full prediction pipeline: gatekeeper → pneumonia → Grad-CAM.
