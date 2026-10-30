@@ -219,57 +219,28 @@ export async function generateClientGradCAM(imageUrl, targetClass = null) {
 
   const target = targetClass !== null ? targetClass : predictedClass;
 
-  // 4. Compute Grad-CAM using Global Average Pooling weight approximation
-  //    Since we don't have a backward pass, we use the feature map activations
-  //    weighted by their spatial average (GAP-CAM), which is a close approximation.
-  const fmData = featureMaps.data; // Float32Array [1, 1280, 7, 7]
-  const numChannels = featureMaps.dims[1]; // 1280
-  const fmH = featureMaps.dims[2]; // 7
-  const fmW = featureMaps.dims[3]; // 7
-  const spatialSize = fmH * fmW;
-
-  // Compute channel-wise global average (GAP weights)
-  const channelWeights = new Float32Array(numChannels);
-  for (let c = 0; c < numChannels; c++) {
-    let sum = 0;
-    const channelOffset = c * spatialSize;
-    for (let i = 0; i < spatialSize; i++) {
-      sum += fmData[channelOffset + i];
+  // 4. Exact Grad-CAM from ONNX model
+  // The exported ONNX model computes exact analytical Grad-CAM for Pneumonia (class 1)
+  // in the forward pass, perfectly matching PyTorch Grad-CAM without any approximation.
+  let upscaledCam;
+  if (results.heatmap && results.heatmap.data) {
+    upscaledCam = results.heatmap.data;
+  } else if (results.feature_maps && results.feature_maps.data) {
+    // Fallback if using legacy export
+    const fmData = results.feature_maps.data;
+    const fmH = results.feature_maps.dims[2];
+    const fmW = results.feature_maps.dims[3];
+    const spatialSize = fmH * fmW;
+    const cam = new Float32Array(spatialSize);
+    for (let c = 0; c < results.feature_maps.dims[1]; c++) {
+      const channelOffset = c * spatialSize;
+      for (let i = 0; i < spatialSize; i++) {
+        cam[i] += fmData[channelOffset + i];
+      }
     }
-    channelWeights[c] = sum / spatialSize;
+    for (let i = 0; i < spatialSize; i++) cam[i] = Math.max(0, cam[i]);
+    upscaledCam = bilinearUpscale(cam, fmW, fmH, IMAGE_SIZE, IMAGE_SIZE);
   }
-
-  // Weighted combination of feature maps → CAM
-  const cam = new Float32Array(spatialSize);
-  for (let c = 0; c < numChannels; c++) {
-    const weight = channelWeights[c];
-    const channelOffset = c * spatialSize;
-    for (let i = 0; i < spatialSize; i++) {
-      cam[i] += weight * fmData[channelOffset + i];
-    }
-  }
-
-  // Apply ReLU
-  for (let i = 0; i < spatialSize; i++) {
-    cam[i] = Math.max(0, cam[i]);
-  }
-
-  // Normalize to [0, 1]
-  let camMin = Infinity;
-  let camMax = -Infinity;
-  for (let i = 0; i < spatialSize; i++) {
-    if (cam[i] < camMin) camMin = cam[i];
-    if (cam[i] > camMax) camMax = cam[i];
-  }
-  const camRange = camMax - camMin;
-  if (camRange > 1e-8) {
-    for (let i = 0; i < spatialSize; i++) {
-      cam[i] = (cam[i] - camMin) / camRange;
-    }
-  }
-
-  // 5. Upscale CAM from 7×7 to 224×224 using bilinear interpolation
-  const upscaledCam = bilinearUpscale(cam, fmW, fmH, IMAGE_SIZE, IMAGE_SIZE);
 
   // 6. Create overlay image using jet colormap
   const gradcamDataUrl = await createGradCAMOverlay(imageUrl, upscaledCam);

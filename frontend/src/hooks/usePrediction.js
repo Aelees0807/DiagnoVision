@@ -45,7 +45,7 @@ export function usePrediction() {
       // ── Real API call to FastAPI backend ──
       // Grad-CAM is generated client-side via ONNX Runtime Web,
       // so we disable it on the backend to save ~150 MB RAM.
-      const response = await predictImage(file, false, {
+      const response = await predictImage(file, true, {
         signal: controller.signal,
         onUploadProgress: (progressEvent) => {
           if (controller.signal.aborted) return;

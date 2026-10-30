@@ -29,7 +29,5 @@ ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 MAX_FILE_SIZE_MB = 10  # reduced from 20 to limit memory spikes
 
 # ── Memory Optimization ───────────────────────────────────────
-# Grad-CAM backward pass requires ~150 MB extra. Disable by default
-# on memory-constrained environments (Render free = 512 MB).
-# Set ENABLE_GRADCAM=true in environment to re-enable.
-ENABLE_GRADCAM = os.environ.get("ENABLE_GRADCAM", "false").lower() in ("true", "1", "yes")
+# Fast Head Grad-CAM uses < 100 KB memory (safe for 512 MB free tier).
+ENABLE_GRADCAM = os.environ.get("ENABLE_GRADCAM", "true").lower() in ("true", "1", "yes")

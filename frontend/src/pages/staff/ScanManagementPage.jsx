@@ -139,7 +139,14 @@ export default function ScanManagementPage() {
       </div>
 
       {/* Scope Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-border mb-6 overflow-x-auto pb-1 animate-fade-in-up stagger-1">
+      <div
+        className="flex items-center gap-2 border-b border-border mb-6 overflow-x-auto pb-2 pt-0.5 custom-scrollbar-x animate-fade-in-up stagger-1"
+        onWheel={(e) => {
+          if (e.deltaY !== 0) {
+            e.currentTarget.scrollLeft += e.deltaY;
+          }
+        }}
+      >
         <button
           onClick={() => setScope('my_patients')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-sm font-semibold transition-all border-b-2 cursor-pointer ${
