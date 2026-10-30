@@ -10,7 +10,7 @@ This task list implements the render-memory-limit-fix bugfix following the explo
 
 ## Tasks
 
-- [ ] 1. Write bug condition exploration test (BEFORE implementing fix)
+- [x] 1. Write bug condition exploration test (BEFORE implementing fix)
   - **Property 1: Bug Condition** - Server-side Grad-CAM Default Memory Spike
   - **CRITICAL**: This test MUST FAIL on unfixed code - failure confirms the bug exists
   - **DO NOT attempt to fix the test or the code when it fails**
@@ -33,7 +33,7 @@ This task list implements the render-memory-limit-fix bugfix following the explo
   - Mark task complete when test is written, run, and failure is documented
   - _Requirements: 1.1, 1.2, 1.3, 1.5_
 
-- [ ] 2. Write preservation property tests (BEFORE implementing fix)
+- [x] 2. Write preservation property tests (BEFORE implementing fix)
   - **Property 2: Preservation** - Non-Buggy Behavior Unchanged
   - **IMPORTANT**: Follow observation-first methodology
   - Observe behavior on UNFIXED code for non-buggy inputs (explicit Grad-CAM requests and /api/gradcam endpoint)
@@ -63,9 +63,9 @@ This task list implements the render-memory-limit-fix bugfix following the explo
   - Mark task complete when tests are written, run, and passing on unfixed code
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
-- [ ] 3. Fix for server-side Grad-CAM default parameter causing memory exhaustion
+- [x] 3. Fix for server-side Grad-CAM default parameter causing memory exhaustion
 
-  - [ ] 3.1 Change backend default parameter from "true" to "false"
+  - [x] 3.1 Change backend default parameter from "true" to "false"
     - Modify backend/routes.py line 38:
       - Change `include_gradcam: str = Form("true"),` to `include_gradcam: str = Form("false"),`
     - Add clarifying comment above the parameter explaining the default behavior:
@@ -80,7 +80,7 @@ This task list implements the render-memory-limit-fix bugfix following the explo
     - _Preservation: Explicit "true" parameter and /api/gradcam endpoint must continue to generate server-side Grad-CAM_
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 3.3_
 
-  - [ ] 3.2 Fix frontend parameter to align with client-side ONNX architecture
+  - [x] 3.2 Fix frontend parameter to align with client-side ONNX architecture
     - Locate frontend/src/hooks/usePrediction.js (or equivalent API service file)
     - Find the predictImage call (approximately line 48 based on root cause analysis)
     - Change hardcoded parameter: `await predictImage(file, true, {` → `await predictImage(file, false, {`
@@ -94,7 +94,7 @@ This task list implements the render-memory-limit-fix bugfix following the explo
     - _Preservation: API call structure and response handling must remain unchanged_
     - _Requirements: 2.1, 2.5_
 
-  - [ ] 3.3 Add documentation to backend/models.py
+  - [x] 3.3 Add documentation to backend/models.py
     - Update docstring for `run_full_prediction` function (approximately line 243)
     - Add parameter documentation:
       - `include_gradcam: bool = False — Generate Grad-CAM server-side (legacy/fallback)`
@@ -106,7 +106,7 @@ This task list implements the render-memory-limit-fix bugfix following the explo
     - _Preservation: No functional changes, documentation only_
     - _Requirements: 2.1, 2.2_
 
-  - [ ] 3.4 Verify bug condition exploration test now passes
+  - [x] 3.4 Verify bug condition exploration test now passes
     - **Property 1: Expected Behavior** - Default Grad-CAM Disabled
     - **IMPORTANT**: Re-run the SAME test from task 1 - do NOT write a new test
     - The test from task 1 encodes the expected behavior (no server-side Grad-CAM by default)
@@ -120,7 +120,7 @@ This task list implements the render-memory-limit-fix bugfix following the explo
     - Document results: "Default requests no longer trigger FastGradCAM, memory stable at ~200MB baseline"
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-  - [ ] 3.5 Verify preservation tests still pass
+  - [x] 3.5 Verify preservation tests still pass
     - **Property 2: Preservation** - Non-Buggy Behavior Unchanged
     - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
     - Run preservation property tests: `pytest backend/tests/test_preservation.py -v`
@@ -134,7 +134,7 @@ This task list implements the render-memory-limit-fix bugfix following the explo
     - If any test fails, investigate root cause and fix before proceeding
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6_
 
-- [ ] 4. Checkpoint - Ensure all tests pass and verify Render deployment
+- [x] 4. Checkpoint - Ensure all tests pass and verify Render deployment
   - Run complete test suite: `pytest backend/tests/ -v --tb=short`
   - Verify all property-based tests pass (bug condition and preservation)
   - Check test coverage: Ensure critical paths are covered (default behavior, explicit Grad-CAM, gatekeeper)
