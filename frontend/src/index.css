@@ -837,19 +837,74 @@ a:hover {
    Scrollbar Styling
    ═══════════════════════════════════════════════════════ */
 
+/* Modern Standard (Firefox, modern Chromium/Safari) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(160, 174, 192, 0.45) transparent;
+}
+
+/* WebKit / Chromium / Edge / Safari */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-background);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-muted);
-  border-radius: 4px;
+  background: rgba(160, 174, 192, 0.45);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-secondary);
+  background: var(--color-primary);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ── Specialized Horizontal Filter / Tab Scrollbar (Ultra-Sleek Pill) ── */
+.custom-scrollbar-x {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(30, 107, 138, 0.35) transparent;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+.custom-scrollbar-x::-webkit-scrollbar {
+  height: 5px;
+  width: 5px;
+}
+
+.custom-scrollbar-x::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.45);
+  border-radius: 9999px;
+  margin: 0 4px;
+}
+
+.custom-scrollbar-x::-webkit-scrollbar-thumb {
+  background: rgba(30, 107, 138, 0.35);
+  border-radius: 9999px;
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.custom-scrollbar-x:hover::-webkit-scrollbar-thumb {
+  background: rgba(30, 107, 138, 0.55);
+}
+
+.custom-scrollbar-x::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+/* Utility to completely hide scrollbars when desired */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

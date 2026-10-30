@@ -350,7 +350,14 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* ── Admin Navigation Tabs ── */}
-      <div className="flex items-center gap-2 border-b border-border mb-6 overflow-x-auto pb-1 animate-fade-in-up">
+      <div
+        className="flex items-center gap-2 border-b border-border mb-6 overflow-x-auto pb-2 pt-0.5 custom-scrollbar-x animate-fade-in-up"
+        onWheel={(e) => {
+          if (e.deltaY !== 0) {
+            e.currentTarget.scrollLeft += e.deltaY;
+          }
+        }}
+      >
         <TabButton
           active={activeTab === 'predictions'}
           onClick={() => setActiveTab('predictions')}
@@ -393,11 +400,11 @@ export default function AdminDashboardPage() {
       {activeTab === 'predictions' && (
         <div className="space-y-4 animate-fade-in">
           {/* Controls Bar (Executive Healthcare Studio Styling) */}
-          <div className="glass rounded-2xl p-4 border border-border/40 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4">
+          <div className="relative z-30 glass rounded-2xl p-4 border border-border/40 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4">
             {/* Search Input with Custom Professional Scope Selector (Google/Lucide Icons) */}
-            <div className="flex items-center gap-2 w-full xl:w-auto">
+            <div className="relative z-30 flex items-center gap-2 w-full xl:w-auto">
               {/* Professional Scope Dropdown Popover */}
-              <div className="relative" ref={targetDropdownRef}>
+              <div className="relative z-30" ref={targetDropdownRef}>
                 <button
                   type="button"
                   onClick={() => setTargetDropdownOpen(prev => !prev)}
@@ -410,7 +417,7 @@ export default function AdminDashboardPage() {
                 </button>
 
                 {targetDropdownOpen && (
-                  <div className="absolute left-0 top-full mt-1.5 w-52 rounded-xl bg-surface/98 backdrop-blur-md border border-border shadow-xl py-1 z-50 animate-scale-in">
+                  <div className="absolute left-0 top-full mt-1.5 w-52 rounded-xl bg-surface border border-border shadow-2xl py-1 z-50 animate-scale-in">
                     <div className="px-3 py-1 text-[10px] font-bold text-muted uppercase tracking-wider border-b border-border/50 mb-0.5">
                       Search Scope
                     </div>
@@ -445,7 +452,7 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* Search Field */}
-              <div className="relative flex-1 sm:w-80">
+              <div className="relative flex-1 sm:w-72 xl:w-64 2xl:w-80">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
                 <input
                   type="text"
@@ -483,7 +490,14 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Structured Semantic Filters (Clustered, Non-Mashy) */}
-            <div className="flex items-center gap-2 overflow-x-auto w-full xl:w-auto pb-1 xl:pb-0">
+            <div
+              className="flex items-center gap-2 overflow-x-auto w-full xl:w-auto pb-2 pt-1 custom-scrollbar-x"
+              onWheel={(e) => {
+                if (e.deltaY !== 0) {
+                  e.currentTarget.scrollLeft += e.deltaY;
+                }
+              }}
+            >
               {/* 1. Master View */}
               <button
                 type="button"
@@ -494,7 +508,7 @@ export default function AdminDashboardPage() {
                   setOnlyMyUploads(false);
                   setPredictionPage(1);
                 }}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
                   isAllActive
                     ? 'bg-primary text-white shadow-sm'
                     : 'bg-surface border border-border text-secondary hover:text-foreground hover:bg-surface-hover'
@@ -507,7 +521,7 @@ export default function AdminDashboardPage() {
               <div className="h-4 w-px bg-border/60 mx-0.5 hidden sm:block shrink-0" />
 
               {/* 2. Diagnostic Class Group (Same Class Things Grouped Together) */}
-              <div className="flex items-center p-0.5 rounded-full bg-surface border border-border shadow-2xs gap-0.5" title="Filter by Diagnostic Class">
+              <div className="flex items-center p-0.5 rounded-full bg-surface border border-border shadow-2xs gap-0.5 shrink-0" title="Filter by Diagnostic Class">
                 <button
                   type="button"
                   onClick={() => {
@@ -546,7 +560,7 @@ export default function AdminDashboardPage() {
               <div className="h-4 w-px bg-border/60 mx-0.5 hidden sm:block shrink-0" />
 
               {/* 3. Review Workflow Status Group */}
-              <div className="flex items-center p-0.5 rounded-full bg-surface border border-border shadow-2xs gap-0.5" title="Filter by Doctor Review Status">
+              <div className="flex items-center p-0.5 rounded-full bg-surface border border-border shadow-2xs gap-0.5 shrink-0" title="Filter by Doctor Review Status">
                 <button
                   type="button"
                   onClick={() => {
@@ -591,7 +605,7 @@ export default function AdminDashboardPage() {
                   setPredictionUncertain(prev => prev === 'yes' ? 'all' : 'yes');
                   setPredictionPage(1);
                 }}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
                   predictionUncertain === 'yes'
                     ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border border-amber-500 shadow-md shadow-amber-500/30 ring-2 ring-amber-400/40 font-bold scale-[1.02]'
                     : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/35 hover:bg-amber-500/20 hover:border-amber-500/60 shadow-2xs'
@@ -620,7 +634,7 @@ export default function AdminDashboardPage() {
                   setOnlyMyUploads(prev => !prev);
                   setPredictionPage(1);
                 }}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
                   onlyMyUploads
                     ? 'bg-primary text-white shadow-sm font-bold'
                     : 'bg-surface border border-border text-secondary hover:text-foreground hover:bg-surface-hover'
@@ -634,7 +648,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Scans Table / List */}
-          <div className="glass rounded-2xl border border-border/40 overflow-hidden shadow-sm">
+          <div className="relative z-0 glass rounded-2xl border border-border/40 overflow-hidden shadow-sm">
             {loadingPredictions ? (
               <div className="py-20 flex flex-col items-center justify-center">
                 <Spinner size="lg" className="text-primary mb-3" />
@@ -892,7 +906,7 @@ export default function AdminDashboardPage() {
       {activeTab === 'users' && (
         <div className="space-y-4 animate-fade-in">
           {/* Controls Bar */}
-          <div className="glass rounded-2xl p-4 border border-border/40 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="relative z-20 glass rounded-2xl p-4 border border-border/40 flex flex-col md:flex-row items-center justify-between gap-4">
             {/* Search */}
             <div className="relative w-full md:w-80">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted" />
@@ -906,7 +920,14 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Role Filter Pills */}
-            <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto">
+            <div
+              className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 pt-1 custom-scrollbar-x"
+              onWheel={(e) => {
+                if (e.deltaY !== 0) {
+                  e.currentTarget.scrollLeft += e.deltaY;
+                }
+              }}
+            >
               {[
                 { id: 'all', label: 'All Accounts' },
                 { id: 'medical_staff', label: 'Medical Staff' },
@@ -916,7 +937,7 @@ export default function AdminDashboardPage() {
                 <button
                   key={f.id}
                   onClick={() => setRoleFilter(f.id)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all cursor-pointer shrink-0 ${
                     roleFilter === f.id
                       ? 'bg-primary text-white shadow-sm'
                       : 'bg-surface border border-border text-secondary hover:text-foreground hover:bg-surface-hover'
@@ -1396,7 +1417,7 @@ function TabButton({ active, onClick, icon, label, count, badge, badgeColor }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-sm font-semibold transition-all border-b-2 whitespace-nowrap cursor-pointer ${
+      className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl text-sm font-semibold transition-all border-b-2 whitespace-nowrap cursor-pointer shrink-0 ${
         active
           ? 'border-primary text-primary bg-primary/5'
           : 'border-transparent text-secondary hover:text-foreground hover:bg-surface-hover/50'

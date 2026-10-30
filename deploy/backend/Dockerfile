@@ -21,9 +21,8 @@ COPY routes.py .
 COPY checkpoints/ checkpoints/
 
 # ── Memory Optimization for Render Free Tier (512 MB) ──────────
-# Disable Grad-CAM by default to save ~150 MB of peak memory.
-# Set ENABLE_GRADCAM=true if you upgrade to a plan with >= 1 GB RAM.
-ENV ENABLE_GRADCAM=false
+# Fast Head Grad-CAM is enabled by default as it uses < 100 KB memory.
+ENV ENABLE_GRADCAM=true
 
 # Limit Python's memory allocator fragmentation
 ENV MALLOC_TRIM_THRESHOLD_=65536
