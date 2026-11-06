@@ -1,0 +1,33 @@
+{
+  "name": "DiagnoVision — AI-Assisted Pneumonia Screening",
+  "short_name": "DiagnoVision",
+  "description": "DiagnoVision — AI-Assisted Pneumonia Screening from Pediatric Chest X-Rays. Upload chest X-rays for instant AI analysis with Grad-CAM explainability.",
+  "id": "com.diagnovision.app",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "dir": "ltr",
+  "lang": "en",
+  "background_color": "#F7FAFC",
+  "theme_color": "#1E6B8A",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
