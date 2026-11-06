@@ -38,8 +38,9 @@ export const predictImage = async (file, includeGradcam = true, axiosConfig = {}
   formData.append('image', file);
   formData.append('include_gradcam', String(includeGradcam));
 
+  // Note: Do NOT manually set Content-Type: multipart/form-data.
+  // Axios will automatically set Content-Type with the proper multipart boundary string.
   const response = await api.post('/api/predict', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
     ...axiosConfig,
   });
   return response.data;
@@ -58,9 +59,7 @@ export const generateGradCAM = async (file, targetClass) => {
     formData.append('target_class', String(targetClass));
   }
 
-  const response = await api.post('/api/gradcam', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  const response = await api.post('/api/gradcam', formData);
   return response.data;
 };
 
