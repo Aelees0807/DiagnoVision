@@ -49,7 +49,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# ── CORS — allow frontend dev server and production ─────────────
+# ── CORS — allow frontend dev server, mobile apps, and production ─────────────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -59,8 +59,11 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "http://127.0.0.1:5174",
         "https://diagnovision.pages.dev",  # Cloudflare Pages production
+        "https://localhost",               # Capacitor Android
+        "capacitor://localhost",           # Capacitor iOS
+        "http://localhost",                # Local Capacitor WebView
     ],
-    allow_origin_regex=r"https://.*\.pages\.dev",
+    allow_origin_regex=r".*",              # Allow mobile app origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

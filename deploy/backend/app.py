@@ -1,8 +1,8 @@
 """
 DiagnoVision — FastAPI Application (Deployment Version)
-Standalone version for Hugging Face Spaces.
+Standalone version for Hugging Face Spaces / Render.
 
-Runs on port 7860 (HF Spaces default).
+Runs on port 7860 (HF Spaces default) or port specified by PORT env var.
 """
 
 import gc
@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
     """Load ML models at startup, clean up at shutdown."""
     print()
     print("=" * 60)
-    print("  DiagnoVision — Backend Starting (HF Spaces)")
+    print("  DiagnoVision — Backend Starting")
     print("=" * 60)
     print()
 
@@ -55,18 +55,19 @@ async def gc_after_inference(request: Request, call_next):
     return response
 
 
-# ── CORS — allow Cloudflare Pages frontend ─────────────────────
+# ── CORS — allow Cloudflare Pages frontend, mobile apps, and local dev ───
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        # UPDATE THESE with your actual deployed URLs:
         "https://diagnovision.pages.dev",
-        "https://*.diagnovision.pages.dev",
-        # Local development
+        "https://localhost",               # Capacitor Android APK
+        "capacitor://localhost",           # Capacitor iOS
+        "http://localhost",
         "http://localhost:5173",
         "http://localhost:5174",
         "http://127.0.0.1:5173",
     ],
+    allow_origin_regex=r".*",              # Allow all origins for mobile apps
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -92,5 +93,7 @@ async def root():
 
 
 if __name__ == "__main__":
+    import os
     import uvicorn
-    uvicorn.run("app:app", host="0.0.0.0", port=7860)
+    port = int(os.environ.get("PORT", 7860))
+    uvicorn.run("app:app", host="0.0.0.0", port=port)
